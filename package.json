@@ -40,6 +40,9 @@
     "type": "git",
     "url": "git+https://github.com/ambersecurityinc/notifly.git"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "publishConfig": {
     "access": "public"
   },
