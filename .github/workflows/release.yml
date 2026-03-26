@@ -1,28 +1,53 @@
+# ============================================================
+# ONGOING RELEASES: Uses OIDC Trusted Publishing (no npm token needed).
+# Prereq: Trusted Publisher must be configured on npmjs.com first.
+# Run first-publish.yml once before enabling this workflow.
+#
+# Trusted publisher config on npmjs.com:
+#   Organization or user: ambersecurityinc
+#   Repository: notifly
+#   Workflow filename: release.yml
+# ============================================================
 name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    branches:
+      - main
+
+permissions:
+  id-token: write       # Required for OIDC trusted publishing
+  contents: write       # For changeset version PR commits
+  pull-requests: write  # For changeset PR creation
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
         with:
-          node-version: '20'
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
 
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm test
+
       - run: npm run build
 
-      - run: npm publish --access public
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: npx changeset publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Do NOT set NODE_AUTH_TOKEN — OIDC handles auth automatically
