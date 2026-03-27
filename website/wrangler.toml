@@ -5,9 +5,9 @@ compatibility_date = "2025-03-27"
 directory = "./dist"
 
 [[routes]]
-pattern = "notifly.sh/*"
+pattern = "notifly.sh"
 custom_domain = true
 
 [[routes]]
-pattern = "www.notifly.sh/*"
+pattern = "www.notifly.sh"
 custom_domain = true
