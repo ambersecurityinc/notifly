@@ -1,0 +1,188 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Error Handling"
+	description="Error handling patterns for notifly — NotiflyResult, ParseError, ServiceError."
+	section="Guides"
+	prev={{ title: 'Cloudflare Workers', href: '/docs/guides/cloudflare-workers' }}
+>
+	<h1>Error Handling</h1>
+	<p>
+		notifly is designed to never crash your application due to a notification failure. This guide
+		covers the error handling patterns available.
+	</p>
+
+	<h2>notify() always resolves</h2>
+	<p>
+		<code>notify()</code> uses <code>Promise.allSettled</code> internally. It always resolves to an
+		array of results — it <strong>never rejects</strong>, even if every service call fails.
+	</p>
+
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+// This always resolves — safe to await without try/catch
+const results = await notify(
+  { urls: ['discord://invalid', 'ntfy://my-topic'] },
+  { body: 'Hello' }
+);
+
+// Check individual results
+for (const result of results) {
+  if (!result.success) {
+    console.error(\`[\${result.service}] \${result.error}\`);
+  }
+}`}
+		lang="typescript"
+	/>
+
+	<h2>NotiflyResult patterns</h2>
+
+	<h3>Check all succeeded</h3>
+	<CodeBlock
+		code={`const results = await notify(options, message);
+const allOk = results.every((r) => r.success);`}
+		lang="typescript"
+	/>
+
+	<h3>Collect failures</h3>
+	<CodeBlock
+		code={`const failures = results.filter((r) => !r.success);
+if (failures.length > 0) {
+  console.warn('Some notifications failed:', failures);
+  // e.g. [{ success: false, service: 'discord', error: 'HTTP 401: Unauthorized' }]
+}`}
+		lang="typescript"
+	/>
+
+	<h3>Structured logging</h3>
+	<CodeBlock
+		code={`const results = await notify(options, message);
+
+for (const { success, service, error } of results) {
+  if (success) {
+    console.log(\`[notify] ✓ \${service}\`);
+  } else {
+    console.error(\`[notify] ✗ \${service}: \${error}\`);
+  }
+}`}
+		lang="typescript"
+	/>
+
+	<h2>ParseError</h2>
+	<p>
+		Thrown by <code>parseUrl()</code> when a URL is malformed or uses an unknown scheme. This is the
+		only function in notifly that throws.
+	</p>
+
+	<CodeBlock
+		code={`import { parseUrl, ParseError } from '@ambersecurityinc/notifly';
+
+try {
+  const config = parseUrl('unknown://something');
+} catch (err) {
+  if (err instanceof ParseError) {
+    // URL was not recognised
+    console.error('Parse error:', err.message);
+  } else {
+    // Unexpected error — re-throw
+    throw err;
+  }
+}`}
+		lang="typescript"
+	/>
+
+	<blockquote>
+		<p>
+			<strong>Note:</strong> You don't need to call <code>parseUrl()</code> directly when using
+			<code>notify()</code> — it handles parsing internally and returns errors in the
+			<code>NotiflyResult</code>.
+		</p>
+	</blockquote>
+
+	<h2>ServiceError</h2>
+	<p>
+		<code>ServiceError</code> is thrown by a service's <code>send()</code> method when the upstream
+		API returns a non-2xx response. It's caught internally by <code>notify()</code> and converted to a
+		failed <code>NotiflyResult</code>.
+	</p>
+
+	<CodeBlock
+		code={`class ServiceError extends Error {
+  name: 'ServiceError';
+  status: number;  // HTTP status code
+  body: string;    // Raw response body
+}`}
+		lang="typescript"
+	/>
+
+	<p>
+		When building a <a href="/docs/guides/custom-services">custom service</a>, you can throw
+		<code>ServiceError</code> for clean error propagation:
+	</p>
+
+	<CodeBlock
+		code={`import { ServiceError } from '@ambersecurityinc/notifly';
+
+async function send(config, message) {
+  const res = await fetch('https://api.myapp.com/notify', {
+    method: 'POST',
+    body: JSON.stringify({ text: message.body }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new ServiceError(
+      \`Upstream API error\`,
+      res.status,
+      body
+    );
+  }
+
+  return { success: true, service: 'myapp' };
+}`}
+		lang="typescript"
+	/>
+
+	<h2>Retry patterns</h2>
+	<p>
+		notifly doesn't retry automatically. For retry logic, wrap <code>notify()</code> yourself:
+	</p>
+
+	<CodeBlock
+		code={`async function notifyWithRetry(options, message, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const results = await notify(options, message);
+    const failures = results.filter((r) => !r.success);
+
+    if (failures.length === 0) return results;
+
+    if (attempt < maxAttempts) {
+      // Exponential backoff
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+
+      // Retry only failed URLs
+      options = {
+        urls: options.urls.filter((_, i) => !results[i].success),
+      };
+    }
+  }
+}`}
+		lang="typescript"
+		label="retry wrapper"
+	/>
+
+	<h2>Fire-and-forget</h2>
+	<p>For non-critical notifications, you may want to send without awaiting:</p>
+	<CodeBlock
+		code={`// Don't block on notification delivery
+notify({ urls }, message).catch((err) => {
+  // This only catches unexpected rejections — notify() itself never rejects
+  console.error('Unexpected notify error:', err);
+});`}
+		lang="typescript"
+	/>
+</DocsLayout>

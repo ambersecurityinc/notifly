@@ -1,0 +1,75 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+	description: string;
+	ogTitle?: string;
+	ogDescription?: string;
+	canonical?: string;
+	noGrain?: boolean;
+}
+
+const {
+	title,
+	description,
+	ogTitle,
+	ogDescription,
+	canonical,
+	noGrain = false,
+} = Astro.props;
+
+const pageTitle = title.includes('notifly') ? title : `${title} — notifly`;
+const canonicalUrl = canonical ?? new URL(Astro.url.pathname, 'https://notifly.sh').toString();
+const ogImg = 'https://notifly.sh/og-image.png';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{pageTitle}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonicalUrl} />
+
+		<!-- Open Graph -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={ogTitle ?? pageTitle} />
+		<meta property="og:description" content={ogDescription ?? description} />
+		<meta property="og:image" content={ogImg} />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:site_name" content="notifly" />
+
+		<!-- Twitter -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={ogTitle ?? pageTitle} />
+		<meta name="twitter:description" content={ogDescription ?? description} />
+		<meta name="twitter:image" content={ogImg} />
+
+		<!-- Favicon -->
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+		<!-- Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&family=Instrument+Serif:ital@0;1&display=swap"
+			rel="stylesheet"
+		/>
+
+		<!-- Sitemap -->
+		<link rel="sitemap" href="/sitemap-index.xml" />
+	</head>
+	<body>
+		{
+			!noGrain && (
+				<div
+					aria-hidden="true"
+					style="position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.025;background-image:url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\");animation:grain 8s steps(10) infinite;"
+				/>
+			)
+		}
+		<slot />
+	</body>
+</html>

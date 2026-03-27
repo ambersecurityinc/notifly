@@ -1,0 +1,88 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="ntfy"
+	description="Send notifications via ntfy.sh or a self-hosted ntfy server using notifly."
+	section="Services"
+	prev={{ title: 'Microsoft Teams', href: '/docs/services/msteams' }}
+	next={{ title: 'Gotify', href: '/docs/services/gotify' }}
+>
+	<h1>ntfy</h1>
+	<p>
+		Send push notifications via <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy.sh</a>
+		— the open-source pub-sub notification service. Works with the public server or your own self-hosted
+		instance.
+	</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="ntfy://topic" lang="text" label="public ntfy.sh" />
+	<CodeBlock code="ntfy://your.server.com/topic" lang="text" label="self-hosted" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>topic</code></td>
+				<td>Yes</td>
+				<td>The ntfy topic to publish to</td>
+			</tr>
+			<tr>
+				<td><code>host</code></td>
+				<td>No</td>
+				<td>Custom server hostname (default: <code>ntfy.sh</code>)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+// Public ntfy.sh
+await notify(
+  { urls: ['ntfy://my-secret-alerts-topic'] },
+  { title: 'Build Passed', body: 'All tests green', type: 'success' }
+);
+
+// Self-hosted
+await notify(
+  { urls: ['ntfy://ntfy.mycompany.com/devops-alerts'] },
+  { title: 'Build Failed', body: 'CI failed on main', type: 'failure' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Setup</h2>
+	<ol>
+		<li>
+			Install the <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy app</a> on your phone (Android
+			or iOS) or desktop.
+		</li>
+		<li>Subscribe to a topic — topics are auto-created on first publish.</li>
+		<li>
+			<strong>Important:</strong> Pick a hard-to-guess topic name since ntfy.sh topics are public
+			and anyone who knows the topic name can subscribe.
+		</li>
+	</ol>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>ntfy.sh topics are public by default. Use a random or private topic name.</li>
+		<li>Self-hosted ntfy servers can be configured with authentication.</li>
+		<li>The free tier on ntfy.sh has rate limits — check their docs for current limits.</li>
+		<li>
+			The <code>type</code> field maps to ntfy
+			<a href="https://docs.ntfy.sh/publish/#tags-emojis" target="_blank" rel="noopener">tags</a>:
+			<code>success</code> → ✅, <code>warning</code> → ⚠️, <code>failure</code> → ❌.
+		</li>
+	</ul>
+</DocsLayout>

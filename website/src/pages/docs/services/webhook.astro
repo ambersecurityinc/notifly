@@ -1,0 +1,98 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Webhook (Generic)"
+	description="POST to any HTTP/HTTPS endpoint with JSON or form-encoded body using notifly."
+	section="Services"
+	prev={{ title: 'Email (SMTP)', href: '/docs/services/email' }}
+	next={{ title: 'Builder Overview', href: '/docs/builder' }}
+>
+	<h1>Webhook (Generic)</h1>
+	<p>
+		POST a notification payload to any HTTP/HTTPS endpoint — useful for custom integrations, internal
+		APIs, or services not natively supported by notifly.
+	</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="json://host/path    (HTTP + JSON)" lang="text" label="JSON over HTTP" />
+	<CodeBlock code="jsons://host/path   (HTTPS + JSON)" lang="text" label="JSON over HTTPS" />
+	<CodeBlock code="form://host/path    (HTTP + form-encoded)" lang="text" label="form over HTTP" />
+	<CodeBlock code="forms://host/path   (HTTPS + form-encoded)" lang="text" label="form over HTTPS" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Field</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>host</code></td>
+				<td>Yes</td>
+				<td>Hostname of the webhook endpoint</td>
+			</tr>
+			<tr>
+				<td><code>path</code></td>
+				<td>No</td>
+				<td>URL path (default: <code>/</code>)</td>
+			</tr>
+			<tr>
+				<td>scheme</td>
+				<td>Yes</td>
+				<td><code>json/jsons</code> for JSON body, <code>form/forms</code> for form-encoded</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Request body</h2>
+	<p>The notification message is sent as the request body:</p>
+
+	<CodeBlock
+		code={`// JSON body (json:// or jsons://)
+{
+  "title": "Your notification title",
+  "body": "Your notification body",
+  "type": "success"
+}`}
+		lang="json"
+		label="JSON body"
+	/>
+
+	<h2>Examples</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+// HTTPS JSON POST
+await notify(
+  { urls: ['jsons://hooks.myapp.com/notify'] },
+  { title: 'Alert', body: 'Something happened', type: 'warning' }
+);
+
+// HTTP form POST (development/local)
+await notify(
+  { urls: ['form://localhost:3000/webhook'] },
+  { body: 'Test notification' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>
+			Use <code>jsons://</code> or <code>forms://</code> (with <code>s</code>) for HTTPS — the scheme
+			suffix controls protocol.
+		</li>
+		<li>No authentication is added automatically — extend with a custom service if you need auth headers.</li>
+		<li>HTTP method is always POST.</li>
+		<li>
+			For more control (custom headers, auth, method), use <a href="/docs/guides/custom-services"
+				>registerService()</a
+			> instead.
+		</li>
+	</ul>
+</DocsLayout>

@@ -1,0 +1,13 @@
+name = "notifly-website"
+compatibility_date = "2025-03-27"
+
+[site]
+bucket = "./dist"
+
+[[routes]]
+pattern = "notifly.sh/*"
+custom_domain = true
+
+[[routes]]
+pattern = "www.notifly.sh/*"
+custom_domain = true

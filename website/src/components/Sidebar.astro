@@ -1,0 +1,142 @@
+---
+interface Props {
+	currentPath: string;
+}
+const { currentPath } = Astro.props;
+
+const nav = [
+	{
+		section: 'Getting Started',
+		items: [
+			{ title: 'Quick Start', href: '/docs' },
+			{ title: 'Installation', href: '/docs/installation' },
+		],
+	},
+	{
+		section: 'API',
+		items: [{ title: 'API Reference', href: '/docs/api-reference' }],
+	},
+	{
+		section: 'Services',
+		items: [
+			{ title: 'Overview', href: '/docs/services' },
+			{ title: 'Discord', href: '/docs/services/discord' },
+			{ title: 'Slack', href: '/docs/services/slack' },
+			{ title: 'Telegram', href: '/docs/services/telegram' },
+			{ title: 'Microsoft Teams', href: '/docs/services/msteams' },
+			{ title: 'ntfy', href: '/docs/services/ntfy' },
+			{ title: 'Gotify', href: '/docs/services/gotify' },
+			{ title: 'Pushover', href: '/docs/services/pushover' },
+			{ title: 'Pushbullet', href: '/docs/services/pushbullet' },
+			{ title: 'Email (SMTP)', href: '/docs/services/email' },
+			{ title: 'Webhook (Generic)', href: '/docs/services/webhook' },
+		],
+	},
+	{
+		section: 'Builder',
+		items: [
+			{ title: 'Overview', href: '/docs/builder' },
+			{ title: 'Schemas', href: '/docs/builder/schemas' },
+			{ title: 'Validation', href: '/docs/builder/validation' },
+			{ title: 'URL Generation', href: '/docs/builder/url-generation' },
+			{ title: 'Smart Paste', href: '/docs/builder/smart-paste' },
+		],
+	},
+	{
+		section: 'Guides',
+		items: [
+			{ title: 'Custom Services', href: '/docs/guides/custom-services' },
+			{ title: 'Cloudflare Workers', href: '/docs/guides/cloudflare-workers' },
+			{ title: 'Error Handling', href: '/docs/guides/error-handling' },
+		],
+	},
+];
+
+function isActive(href: string): boolean {
+	if (href === '/docs') return currentPath === '/docs' || currentPath === '/docs/';
+	return currentPath === href || currentPath === `${href}/`;
+}
+---
+
+<aside id="docs-sidebar" style="border-right:1px solid var(--color-border);padding:32px 0;position:sticky;top:0;height:calc(100vh - 60px);overflow-y:auto;" class="docs-sidebar">
+	<button
+		id="sidebar-close"
+		aria-label="Close sidebar"
+		style="display:none;position:absolute;top:12px;right:12px;background:none;border:1px solid #222;border-radius:6px;color:#666;padding:4px 8px;font-size:11px;cursor:pointer;"
+		>✕</button
+	>
+
+	{
+		nav.map((group) => (
+			<div style="margin-bottom:24px;">
+				<div style="padding:0 20px;margin-bottom:6px;">
+					<span style="font-family:var(--font-mono);font-size:10px;color:#444;text-transform:uppercase;letter-spacing:0.1em;">
+						{group.section}
+					</span>
+				</div>
+				{group.items.map((item) => (
+					<a
+						href={item.href}
+						style={`display:block;padding:6px 20px;font-family:var(--font-heading);font-size:13px;border-left:2px solid ${isActive(item.href) ? 'var(--color-accent)' : 'transparent'};color:${isActive(item.href) ? 'var(--color-accent)' : '#666'};background:${isActive(item.href) ? 'var(--color-accent-dim)' : 'transparent'};text-decoration:none;transition:color 0.15s,background 0.15s;`}
+						class="sidebar-link"
+					>
+						{item.title}
+					</a>
+				))}
+			</div>
+		))
+	}
+</aside>
+
+<style>
+	.sidebar-link:hover {
+		color: var(--color-text) !important;
+		background: #0f0f0f !important;
+	}
+
+	.docs-sidebar::-webkit-scrollbar {
+		width: 3px;
+	}
+	.docs-sidebar::-webkit-scrollbar-thumb {
+		background: #222;
+	}
+
+	@media (max-width: 768px) {
+		.docs-sidebar {
+			display: none;
+			position: fixed !important;
+			top: 0;
+			left: 0;
+			width: 260px;
+			height: 100vh !important;
+			z-index: 100;
+			background: var(--color-bg);
+			border-right: 1px solid var(--color-border) !important;
+			padding-top: 48px !important;
+		}
+		.docs-sidebar.open {
+			display: block !important;
+		}
+		#sidebar-close {
+			display: block !important;
+		}
+	}
+</style>
+
+<script>
+	const close = document.getElementById('sidebar-close');
+	const sidebar = document.getElementById('docs-sidebar');
+	if (close && sidebar) {
+		close.addEventListener('click', () => sidebar.classList.remove('open'));
+	}
+
+	// Mobile sidebar toggle from hamburger in Navbar (re-used id)
+	const hamburger = document.getElementById('nav-hamburger');
+	if (hamburger && sidebar) {
+		hamburger.addEventListener('click', () => {
+			if (window.innerWidth <= 768) {
+				sidebar.classList.toggle('open');
+			}
+		});
+	}
+</script>

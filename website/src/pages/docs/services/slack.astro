@@ -1,0 +1,97 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Slack"
+	description="Send notifications to Slack channels via incoming webhooks using notifly."
+	section="Services"
+	prev={{ title: 'Discord', href: '/docs/services/discord' }}
+	next={{ title: 'Telegram', href: '/docs/services/telegram' }}
+>
+	<h1>Slack</h1>
+	<p>Send notifications to Slack channels via incoming webhooks.</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="slack://token_a/token_b/token_c[/channel]" lang="text" label="scheme" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>token_a</code></td>
+				<td>Yes</td>
+				<td>First path segment from the Slack webhook URL (e.g. <code>T00000000</code>)</td>
+			</tr>
+			<tr>
+				<td><code>token_b</code></td>
+				<td>Yes</td>
+				<td>Second path segment (e.g. <code>B00000000</code>)</td>
+			</tr>
+			<tr>
+				<td><code>token_c</code></td>
+				<td>Yes</td>
+				<td>Third path segment — treat as a secret</td>
+			</tr>
+			<tr>
+				<td><code>channel</code></td>
+				<td>No</td>
+				<td>Override the default channel (e.g. <code>#alerts</code>)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  { urls: ['slack://T00000000/B00000000/XXXXXXXXXXXXXXXX'] },
+  { title: 'Alert', body: 'Disk usage above 90%', type: 'warning' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<ol>
+		<li>Go to <strong>api.slack.com/apps</strong> and open or create your Slack app.</li>
+		<li>Click <strong>Incoming Webhooks</strong> and enable it.</li>
+		<li>Click <strong>Add New Webhook to Workspace</strong> and pick a channel.</li>
+		<li>
+			Copy the webhook URL — it looks like:
+			<CodeBlock
+				code="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXX"
+				lang="text"
+				label="slack webhook url"
+			/>
+		</li>
+		<li>
+			The three path segments after <code>/services/</code> map directly to <code>token_a</code>,
+			<code>token_b</code>, <code>token_c</code>.
+		</li>
+	</ol>
+
+	<h2>Smart paste</h2>
+	<CodeBlock
+		code={`import { smartParse } from '@ambersecurityinc/notifly/builder';
+
+const result = smartParse(
+  'https://hooks.slack.com/services/T00000000/B00000000/XXXX'
+);
+// → { service: 'slack', notiflyUrl: 'slack://T00000000/B00000000/XXXX', ... }`}
+		lang="typescript"
+	/>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>The webhook is bound to the channel chosen at creation time unless you override with a channel segment.</li>
+		<li><code>token_c</code> is sensitive — store it in an environment variable, not source code.</li>
+	</ul>
+</DocsLayout>

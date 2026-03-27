@@ -1,0 +1,104 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+	title: string;
+	description: string;
+	section?: string;
+	prev?: { title: string; href: string };
+	next?: { title: string; href: string };
+}
+
+const { title, description, section, prev, next } = Astro.props;
+const pageTitle = title.includes('notifly') ? title : `${title} — notifly docs`;
+---
+
+<BaseLayout title={pageTitle} description={description} noGrain={true}>
+	<Navbar />
+	<div
+		style="display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 60px);max-width:1200px;margin:0 auto;gap:0;"
+		class="docs-grid"
+	>
+		<Sidebar currentPath={Astro.url.pathname} />
+
+		<main style="padding:40px 48px 80px;min-width:0;" class="docs-main">
+			<!-- Breadcrumbs -->
+			{
+				section && (
+					<div
+						style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-bottom:24px;display:flex;align-items:center;gap:6px;"
+					>
+						<a href="/docs" style="color:var(--color-text-muted);">
+							Docs
+						</a>
+						<span style="color:var(--color-border);">/</span>
+						<span style="color:var(--color-text);">{section}</span>
+					</div>
+				)
+			}
+
+			<article class="prose">
+				<slot />
+			</article>
+
+			<!-- Prev / Next -->
+			{
+				(prev || next) && (
+					<div
+						style="display:flex;justify-content:space-between;margin-top:60px;padding-top:24px;border-top:1px solid var(--color-border);gap:12px;"
+					>
+						{prev ? (
+							<a
+								href={prev.href}
+								style="display:flex;flex-direction:column;gap:4px;padding:14px 18px;border:1px solid var(--color-border);border-radius:10px;min-width:0;flex:1;transition:border-color 0.2s;"
+								class="prev-next-link"
+							>
+								<span style="font-family:var(--font-mono);font-size:10px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.08em;">
+									← Previous
+								</span>
+								<span style="font-family:var(--font-heading);font-size:13px;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+									{prev.title}
+								</span>
+							</a>
+						) : (
+							<div />
+						)}
+						{next && (
+							<a
+								href={next.href}
+								style="display:flex;flex-direction:column;gap:4px;padding:14px 18px;border:1px solid var(--color-border);border-radius:10px;text-align:right;min-width:0;flex:1;transition:border-color 0.2s;"
+								class="prev-next-link"
+							>
+								<span style="font-family:var(--font-mono);font-size:10px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.08em;">
+									Next →
+								</span>
+								<span style="font-family:var(--font-heading);font-size:13px;color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+									{next.title}
+								</span>
+							</a>
+						)}
+					</div>
+				)
+			}
+		</main>
+	</div>
+	<Footer />
+</BaseLayout>
+
+<style>
+	@media (max-width: 768px) {
+		.docs-grid {
+			grid-template-columns: 1fr !important;
+		}
+		.docs-main {
+			padding: 24px 20px 60px !important;
+		}
+	}
+
+	.prev-next-link:hover {
+		border-color: var(--color-accent-border) !important;
+	}
+</style>

@@ -1,0 +1,94 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Pushover"
+	description="Send push notifications to iOS, Android, and desktop via Pushover using notifly."
+	section="Services"
+	prev={{ title: 'Gotify', href: '/docs/services/gotify' }}
+	next={{ title: 'Pushbullet', href: '/docs/services/pushbullet' }}
+>
+	<h1>Pushover</h1>
+	<p>
+		Send push notifications to iOS, Android, and desktop via <a
+			href="https://pushover.net"
+			target="_blank"
+			rel="noopener">Pushover</a
+		>.
+	</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="pover://user_key/api_token[/device]" lang="text" label="scheme" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>user_key</code></td>
+				<td>Yes</td>
+				<td>Your 30-character Pushover user key</td>
+			</tr>
+			<tr>
+				<td><code>api_token</code></td>
+				<td>Yes</td>
+				<td>30-character API token from your Pushover application</td>
+			</tr>
+			<tr>
+				<td><code>device</code></td>
+				<td>No</td>
+				<td>Target a specific device by name (blank = all devices)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+// Send to all devices
+await notify(
+  { urls: ['pover://uQiRzpo4DXghDmr9QzzfQu27cmVRsG/azGDORePK8gMaC0QOYAMyEEuzJnyUi'] },
+  { title: 'Server Down', body: 'web-01 is not responding', type: 'failure' }
+);
+
+// Target a specific device
+await notify(
+  { urls: ['pover://USER_KEY/API_TOKEN/my-iphone'] },
+  { title: 'Alert', body: 'Check the logs', type: 'warning' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<h3>User key</h3>
+	<ol>
+		<li>Sign in at <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>.</li>
+		<li>Your <strong>User Key</strong> is displayed on the main dashboard (top right).</li>
+	</ol>
+
+	<h3>API token</h3>
+	<ol>
+		<li>Go to <a href="https://pushover.net/apps/build" target="_blank" rel="noopener">pushover.net/apps/build</a>.</li>
+		<li>Fill in the application name and agree to the terms.</li>
+		<li>Click <strong>Create Application</strong>.</li>
+		<li>Copy the <strong>API Token/Key</strong> from the application page.</li>
+	</ol>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>Both keys are exactly 30 characters — validation will reject shorter/longer values.</li>
+		<li>Pushover has a free tier with 10,000 messages/month per application.</li>
+		<li>
+			The <code>type</code> field maps to Pushover priority:
+			<code>failure</code> → high priority (1), <code>warning</code> → normal (0), others → normal (0).
+		</li>
+	</ul>
+</DocsLayout>

@@ -1,0 +1,138 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="URL Generation"
+	description="Build and decompose notifly notification URLs using the headless builder."
+	section="Builder"
+	prev={{ title: 'Validation', href: '/docs/builder/validation' }}
+	next={{ title: 'Smart Paste', href: '/docs/builder/smart-paste' }}
+>
+	<h1>URL Generation</h1>
+
+	<h2>buildUrl()</h2>
+	<p>Build a notifly URL from validated field values.</p>
+
+	<CodeBlock
+		code={`function buildUrl(
+  service: string,
+  fields: Record<string, string | number | boolean>,
+): BuildUrlResult`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<CodeBlock
+		code={`interface BuildUrlResult {
+  success: boolean;
+  url?: string;           // Present when success is true
+  errors?: ValidationError[];  // Present when success is false
+}`}
+		lang="typescript"
+		label="BuildUrlResult"
+	/>
+
+	<p>
+		<code>buildUrl()</code> validates before building — if validation fails it returns errors
+		instead of a URL.
+	</p>
+
+	<h3>Examples</h3>
+
+	<CodeBlock
+		code={`import { buildUrl } from '@ambersecurityinc/notifly/builder';
+
+// Discord
+const result = buildUrl('discord', {
+  webhook_id: '1234567890',
+  webhook_token: 'abcdefghijklmnopqrst',
+});
+// → { success: true, url: 'discord://1234567890/abcdefghijklmnopqrst' }
+
+// ntfy (public server)
+const ntfy = buildUrl('ntfy', { topic: 'my-alerts' });
+// → { success: true, url: 'ntfy://my-alerts' }
+
+// ntfy (self-hosted)
+const ntfySelf = buildUrl('ntfy', {
+  topic: 'my-alerts',
+  host: 'ntfy.myserver.com',
+});
+// → { success: true, url: 'ntfy://ntfy.myserver.com/my-alerts' }
+
+// Validation failure
+const bad = buildUrl('discord', { webhook_id: '', webhook_token: '' });
+// → { success: false, errors: [{ field: 'webhook_id', message: 'Required' }, ...] }`}
+		lang="typescript"
+	/>
+
+	<h2>decomposeUrl()</h2>
+	<p>
+		Decompose an existing notifly URL back into its service key and field values. Useful for the
+		edit flow: load an existing URL → display a pre-filled form → user edits → rebuild.
+	</p>
+
+	<CodeBlock
+		code={`function decomposeUrl(url: string): DecomposeResult`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<CodeBlock
+		code={`interface DecomposeResult {
+  success: boolean;
+  service?: string;
+  fields?: Record<string, string>;
+  error?: string;
+}`}
+		lang="typescript"
+		label="DecomposeResult"
+	/>
+
+	<h3>Examples</h3>
+	<CodeBlock
+		code={`import { decomposeUrl } from '@ambersecurityinc/notifly/builder';
+
+const result = decomposeUrl('discord://1234567890/mytoken');
+// → {
+//   success: true,
+//   service: 'discord',
+//   fields: {
+//     webhook_id: '1234567890',
+//     webhook_token: 'mytoken',
+//   }
+// }
+
+const ntfy = decomposeUrl('ntfy://my-alerts');
+// → { success: true, service: 'ntfy', fields: { topic: 'my-alerts' } }
+
+// Unknown scheme
+const bad = decomposeUrl('unknown://something');
+// → { success: false, error: 'Unknown service scheme: unknown' }`}
+		lang="typescript"
+	/>
+
+	<h2>Round-trip pattern</h2>
+	<p>Decompose an existing URL, display a pre-filled edit form, then rebuild on save:</p>
+
+	<CodeBlock
+		code={`import { decomposeUrl, validateFields, buildUrl } from '@ambersecurityinc/notifly/builder';
+
+// Load existing URL
+const { service, fields } = decomposeUrl(storedUrl);
+
+// Pre-fill form with fields
+// ... user edits ...
+
+// On save
+const errors = validateFields(service, updatedFields);
+if (errors.length === 0) {
+  const { url } = buildUrl(service, updatedFields);
+  saveUrl(url);
+}`}
+		lang="typescript"
+		label="edit flow"
+	/>
+</DocsLayout>

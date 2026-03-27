@@ -1,0 +1,60 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+	code: string;
+	lang?: string;
+	label?: string;
+	lineNumbers?: boolean;
+}
+
+const { code, lang = 'typescript', label, lineNumbers } = Astro.props;
+const showLineNumbers = lineNumbers ?? code.split('\n').length > 5;
+const id = `cb-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class="code-block" style="border-radius:10px;overflow:hidden;border:1px solid var(--color-border);margin:1.25rem 0;">
+	<div
+		style="background:var(--color-surface);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--color-border);"
+	>
+		<span
+			style="font-size:11px;color:#555;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em;"
+			>{label ?? lang}</span
+		>
+		<button
+			data-copy-id={id}
+			style="background:none;border:1px solid #222;border-radius:5px;color:#555;cursor:pointer;padding:3px 8px;font-size:10px;font-family:var(--font-mono);transition:all 0.2s;"
+			class="copy-btn"
+		>
+			copy
+		</button>
+	</div>
+	<div id={id} data-code={code} style="background:var(--color-surface-2);">
+		<Code
+			code={code}
+			lang={lang as Parameters<typeof Code>[0]['lang']}
+			theme="github-dark"
+			style={`background:var(--color-surface-2)!important;margin:0;padding:16px;font-size:12px;line-height:1.7;font-family:var(--font-mono);overflow-x:auto;`}
+		/>
+	</div>
+</div>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach((btn) => {
+		btn.addEventListener('click', () => {
+			const id = btn.getAttribute('data-copy-id');
+			if (!id) return;
+			const el = document.getElementById(id);
+			if (!el) return;
+			const code = el.getAttribute('data-code') ?? el.textContent ?? '';
+			navigator.clipboard.writeText(code).then(() => {
+				btn.textContent = 'copied!';
+				btn.style.color = 'var(--color-accent)';
+				setTimeout(() => {
+					btn.textContent = 'copy';
+					btn.style.color = '#555';
+				}, 2000);
+			});
+		});
+	});
+</script>

@@ -1,0 +1,152 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+
+const workerCode = `import { notify } from '@ambersecurityinc/notifly';
+
+interface Env {
+  DISCORD_URL: string;
+  NTFY_URL: string;
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const urls = [env.DISCORD_URL, env.NTFY_URL].filter(Boolean);
+
+    if (urls.length === 0) {
+      return new Response('No notification URLs configured', { status: 500 });
+    }
+
+    const results = await notify(
+      { urls },
+      {
+        title: 'Worker Notification',
+        body: 'Something happened in your worker',
+        type: 'info',
+      }
+    );
+
+    const failed = results.filter((r) => !r.success);
+    if (failed.length > 0) {
+      console.error('Notification failures:', failed);
+    }
+
+    return Response.json({ results });
+  },
+
+  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
+    await notify(
+      { urls: [env.DISCORD_URL] },
+      { title: 'Cron', body: 'Scheduled job ran', type: 'success' }
+    );
+  },
+} satisfies ExportedHandler<Env>;`;
+
+const queuesCode = `// Producer: enqueue notification
+await env.NOTIFY_QUEUE.send({
+  urls: [env.DISCORD_URL, env.NTFY_URL],
+  message: { title: 'Event', body: 'Something happened' },
+});
+
+// Consumer: send notifications
+export default {
+  async queue(batch: MessageBatch<NotifyPayload>, env: Env) {
+    for (const msg of batch.messages) {
+      await notify(
+        { urls: msg.body.urls ?? [env.DISCORD_URL] },
+        msg.body.message
+      );
+      msg.ack();
+    }
+  },
+};`;
+---
+
+<DocsLayout
+	title="Cloudflare Workers"
+	description="Use notifly in Cloudflare Workers with environment variables and wrangler.toml."
+	section="Guides"
+	prev={{ title: 'Custom Services', href: '/docs/guides/custom-services' }}
+	next={{ title: 'Error Handling', href: '/docs/guides/error-handling' }}
+>
+	<h1>Cloudflare Workers</h1>
+	<p>
+		notifly uses only the Web API and works natively in Cloudflare Workers. This guide shows a
+		complete setup with environment variables and wrangler.toml.
+	</p>
+
+	<h2>Install</h2>
+	<CodeBlock code="npm install @ambersecurityinc/notifly" lang="bash" label="terminal" />
+
+	<h2>wrangler.toml</h2>
+	<p>
+		Store notification URLs as <strong>secrets</strong> (not plain vars) so they don't appear in
+		your source or dashboard logs:
+	</p>
+	<CodeBlock
+		code={`name = "my-worker"
+compatibility_date = "2025-03-27"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets — set with: wrangler secret put DISCORD_URL
+# DISCORD_URL
+# NTFY_URL`}
+		lang="toml"
+		label="wrangler.toml"
+	/>
+
+	<h2>Set secrets</h2>
+	<CodeBlock
+		code={`wrangler secret put DISCORD_URL
+# Paste: discord://1234567890/your_webhook_token
+
+wrangler secret put NTFY_URL
+# Paste: ntfy://my-alerts`}
+		lang="bash"
+		label="terminal"
+	/>
+
+	<h2>Worker code</h2>
+	<CodeBlock code={workerCode} lang="typescript" label="src/index.ts" />
+
+	<h2>MailChannels email (free on Workers)</h2>
+	<p>
+		MailChannels is integrated into the Cloudflare Workers network and available for free. Use the
+		<code>mailto://</code> scheme with the <code>mailchannels</code> gateway:
+	</p>
+	<CodeBlock
+		code={`const emailUrl = 'mailto://alerts:mailchannels@' + env.EMAIL_DOMAIN + '?to=' + env.ALERT_EMAIL;
+
+await notify(
+  { urls: [emailUrl] },
+  { title: 'Alert', body: 'Email from a Worker!', type: 'warning' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Queues integration</h2>
+	<p>Use Cloudflare Queues to fan out notifications asynchronously:</p>
+	<CodeBlock code={queuesCode} lang="typescript" label="queue consumer" />
+
+	<h2>Tips</h2>
+	<ul>
+		<li>
+			Never put secrets in <code>wrangler.toml</code> — use <code>wrangler secret put</code> instead.
+		</li>
+		<li>
+			For local development, create a <code>.dev.vars</code> file (gitignored) with your secrets:
+			<CodeBlock
+				code={`DISCORD_URL=discord://1234567890/token
+NTFY_URL=ntfy://my-alerts`}
+				lang="bash"
+				label=".dev.vars"
+			/>
+		</li>
+		<li>
+			notifly uses <code>fetch()</code> internally, which runs on the Cloudflare edge — no cold
+			start overhead for network calls.
+		</li>
+	</ul>
+</DocsLayout>

@@ -1,0 +1,254 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="API Reference"
+	description="Full documentation for every export in @ambersecurityinc/notifly."
+	section="API"
+	prev={{ title: 'Installation', href: '/docs/installation' }}
+	next={{ title: 'Services Overview', href: '/docs/services' }}
+>
+	<h1>API Reference</h1>
+	<p>All exports from <code>@ambersecurityinc/notifly</code>.</p>
+
+	<h2>notify()</h2>
+	<p>Send a notification to one or more services simultaneously.</p>
+
+	<CodeBlock
+		code={`function notify(
+  options: NotiflyOptions,
+  message: NotiflyMessage,
+): Promise<NotiflyResult[]>`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<h3>Parameters</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Parameter</th>
+				<th>Type</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>options</code></td>
+				<td><code>NotiflyOptions</code></td>
+				<td>Object containing the <code>urls</code> array</td>
+			</tr>
+			<tr>
+				<td><code>options.urls</code></td>
+				<td><code>string[]</code></td>
+				<td>List of notification URLs (one per service)</td>
+			</tr>
+			<tr>
+				<td><code>message</code></td>
+				<td><code>NotiflyMessage</code></td>
+				<td>The notification content to send</td>
+			</tr>
+			<tr>
+				<td><code>message.body</code></td>
+				<td><code>string</code></td>
+				<td>Main notification text (required)</td>
+			</tr>
+			<tr>
+				<td><code>message.title</code></td>
+				<td><code>string</code></td>
+				<td>Notification title (optional)</td>
+			</tr>
+			<tr>
+				<td><code>message.type</code></td>
+				<td><code>'info' | 'success' | 'warning' | 'failure'</code></td>
+				<td>Message severity level (optional, default: <code>'info'</code>)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>Returns</h3>
+	<p>
+		A <code>Promise</code> that resolves to an array of <code>NotiflyResult</code> objects — one per
+		URL, in order. The promise <strong>always resolves</strong> (never rejects), even if some services
+		fail. Uses <code>Promise.allSettled</code> internally for full concurrency.
+	</p>
+
+	<CodeBlock
+		code={`interface NotiflyResult {
+  success: boolean;
+  service: string;  // e.g. 'discord', 'ntfy'
+  error?: string;   // present only when success is false
+}`}
+		lang="typescript"
+		label="NotiflyResult"
+	/>
+
+	<h3>Example</h3>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+const results = await notify(
+  {
+    urls: [
+      'discord://1234567890/token',
+      'ntfy://my-topic',
+      'invalid-url',  // gracefully handled
+    ],
+  },
+  { title: 'Deploy', body: 'v2.0 is live', type: 'success' }
+);
+
+for (const result of results) {
+  if (!result.success) {
+    console.error(\`\${result.service}: \${result.error}\`);
+  }
+}`}
+		lang="typescript"
+		label="example"
+	/>
+
+	<h2>parseUrl()</h2>
+	<p>Parse a notification URL string into a service config object.</p>
+
+	<CodeBlock
+		code={`function parseUrl(url: string): ServiceConfig`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<p>
+		Throws a <code>ParseError</code> if the URL scheme is unknown or the URL is malformed.
+	</p>
+
+	<CodeBlock
+		code={`import { parseUrl, ParseError } from '@ambersecurityinc/notifly';
+
+try {
+  const config = parseUrl('discord://1234567890/mytoken');
+  console.log(config);
+  // { service: 'discord', webhook_id: '1234567890', webhook_token: 'mytoken' }
+} catch (err) {
+  if (err instanceof ParseError) {
+    console.error('Bad URL:', err.message);
+  }
+}`}
+		lang="typescript"
+		label="example"
+	/>
+
+	<h2>registerService()</h2>
+	<p>Register a custom notification service plugin.</p>
+
+	<CodeBlock
+		code={`function registerService(definition: ServiceDefinition): void`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<CodeBlock
+		code={`interface ServiceDefinition {
+  schemas: string[];
+  parseUrl(url: URL): ServiceConfig;
+  send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult>;
+}`}
+		lang="typescript"
+		label="ServiceDefinition"
+	/>
+
+	<p>
+		See the <a href="/docs/guides/custom-services">Custom Services guide</a> for a full walkthrough.
+	</p>
+
+	<CodeBlock
+		code={`import { registerService, notify } from '@ambersecurityinc/notifly';
+
+registerService({
+  schemas: ['myapp'],
+  parseUrl(url) {
+    return { service: 'myapp', token: url.hostname };
+  },
+  async send(config, message) {
+    const res = await fetch('https://api.myapp.com/notify', {
+      method: 'POST',
+      headers: { Authorization: \`Bearer \${config.token}\` },
+      body: JSON.stringify({ text: message.body }),
+    });
+    return { success: res.ok, service: 'myapp' };
+  },
+});
+
+// Now usable via notify()
+await notify({ urls: ['myapp://my-token'] }, { body: 'Hello!' });`}
+		lang="typescript"
+		label="example"
+	/>
+
+	<h2>Type Reference</h2>
+
+	<h3>NotiflyMessage</h3>
+	<CodeBlock
+		code={`interface NotiflyMessage {
+  title?: string;
+  body: string;
+  type?: 'info' | 'success' | 'warning' | 'failure';
+}`}
+		lang="typescript"
+	/>
+
+	<h3>NotiflyResult</h3>
+	<CodeBlock
+		code={`interface NotiflyResult {
+  success: boolean;
+  service: string;
+  error?: string;
+}`}
+		lang="typescript"
+	/>
+
+	<h3>NotiflyOptions</h3>
+	<CodeBlock
+		code={`interface NotiflyOptions {
+  urls: string[];
+}`}
+		lang="typescript"
+	/>
+
+	<h3>ServiceConfig</h3>
+	<CodeBlock
+		code={`interface ServiceConfig {
+  service: string;
+  [key: string]: unknown;
+}`}
+		lang="typescript"
+	/>
+
+	<h3>ServiceDefinition</h3>
+	<CodeBlock
+		code={`interface ServiceDefinition {
+  schemas: string[];
+  parseUrl(url: URL): ServiceConfig;
+  send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult>;
+}`}
+		lang="typescript"
+	/>
+
+	<h3>ParseError</h3>
+	<CodeBlock
+		code={`class ParseError extends Error {
+  name: 'ParseError';
+}`}
+		lang="typescript"
+	/>
+
+	<h3>ServiceError</h3>
+	<CodeBlock
+		code={`class ServiceError extends Error {
+  name: 'ServiceError';
+  status: number;   // HTTP status code from the service
+  body: string;     // Raw response body
+}`}
+		lang="typescript"
+	/>
+</DocsLayout>

@@ -1,0 +1,102 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Discord"
+	description="Send notifications to Discord channels via webhooks using notifly."
+	section="Services"
+	prev={{ title: 'Services Overview', href: '/docs/services' }}
+	next={{ title: 'Slack', href: '/docs/services/slack' }}
+>
+	<h1>Discord</h1>
+	<p>Send notifications to any Discord channel via an incoming webhook.</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="discord://webhook_id/webhook_token" lang="text" label="scheme" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>webhook_id</code></td>
+				<td>Yes</td>
+				<td>Numeric ID from the webhook URL (digits only)</td>
+			</tr>
+			<tr>
+				<td><code>webhook_token</code></td>
+				<td>Yes</td>
+				<td>Alphanumeric token from the webhook URL</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  { urls: ['discord://1234567890/abcdefghijklmnop'] },
+  { title: 'Deploy Complete', body: 'v2.0 is live!', type: 'success' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<ol>
+		<li>Open your Discord server and go to <strong>Server Settings</strong>.</li>
+		<li>Click <strong>Integrations</strong> → <strong>Webhooks</strong>.</li>
+		<li>Select an existing webhook or click <strong>New Webhook</strong>.</li>
+		<li>Choose the target channel and click <strong>Copy Webhook URL</strong>.</li>
+		<li>
+			The URL looks like:
+			<CodeBlock
+				code="https://discord.com/api/webhooks/1234567890/abcdefghijklmnop"
+				lang="text"
+				label="discord webhook url"
+			/>
+		</li>
+		<li>
+			Extract the two path segments after <code>/webhooks/</code>:
+			<ul>
+				<li><code>1234567890</code> → <code>webhook_id</code></li>
+				<li><code>abcdefghijklmnop</code> → <code>webhook_token</code></li>
+			</ul>
+		</li>
+	</ol>
+
+	<h2>Smart paste</h2>
+	<p>
+		If you use the <a href="/docs/builder/smart-paste">smartParse()</a> function, you can paste the
+		raw Discord webhook URL directly and it will be converted automatically:
+	</p>
+	<CodeBlock
+		code={`import { smartParse } from '@ambersecurityinc/notifly/builder';
+
+const result = smartParse(
+  'https://discord.com/api/webhooks/1234567890/abcdefghijklmnop'
+);
+// → { service: 'discord', notiflyUrl: 'discord://1234567890/abcdefghijklmnop', ... }`}
+		lang="typescript"
+	/>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>
+			Discord webhooks are tied to a specific channel. To send to multiple channels, use multiple
+			URLs.
+		</li>
+		<li>
+			The <code>type</code> field in <code>NotiflyMessage</code> maps to Discord embed colors:
+			<code>success</code> → green, <code>warning</code> → yellow, <code>failure</code> → red.
+		</li>
+		<li>Messages have a 2000-character body limit enforced by the Discord API.</li>
+	</ul>
+</DocsLayout>

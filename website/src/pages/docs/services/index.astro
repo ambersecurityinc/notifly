@@ -1,0 +1,94 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import ServiceCard from '../../../components/ServiceCard.astro';
+
+const services = [
+	{ name: 'Discord', scheme: 'discord://', color: '#5865F2', category: 'Chat', href: '/docs/services/discord', format: 'discord://webhook_id/webhook_token' },
+	{ name: 'Slack', scheme: 'slack://', color: '#E01E5A', category: 'Chat', href: '/docs/services/slack', format: 'slack://token_a/token_b/token_c' },
+	{ name: 'Telegram', scheme: 'tgram://', color: '#26A5E4', category: 'Chat', href: '/docs/services/telegram', format: 'tgram://bot_token/chat_id' },
+	{ name: 'Microsoft Teams', scheme: 'msteams://', color: '#6264A7', category: 'Chat', href: '/docs/services/msteams', format: 'msteams://group_id/channel_id/webhook_id' },
+	{ name: 'ntfy', scheme: 'ntfy://', color: '#57A85C', category: 'Self-Hosted', href: '/docs/services/ntfy', format: 'ntfy://topic or ntfy://host/topic' },
+	{ name: 'Gotify', scheme: 'gotify://', color: '#3F8EBF', category: 'Self-Hosted', href: '/docs/services/gotify', format: 'gotify://host/token' },
+	{ name: 'Pushover', scheme: 'pover://', color: '#249DF1', category: 'Push', href: '/docs/services/pushover', format: 'pover://user_key/api_token' },
+	{ name: 'Pushbullet', scheme: 'pbul://', color: '#4CB749', category: 'Push', href: '/docs/services/pushbullet', format: 'pbul://access_token' },
+	{ name: 'Email', scheme: 'mailto://', color: '#D44638', category: 'Email', href: '/docs/services/email', format: 'mailto://user:gateway@host' },
+	{ name: 'Webhook', scheme: 'json://', color: '#FF6B35', category: 'Webhook', href: '/docs/services/webhook', format: 'json://host/path or jsons://host/path' },
+];
+---
+
+<DocsLayout
+	title="Services Overview"
+	description="Overview of all 10 notification services supported by notifly."
+	section="Services"
+	prev={{ title: 'API Reference', href: '/docs/api-reference' }}
+	next={{ title: 'Discord', href: '/docs/services/discord' }}
+>
+	<h1>Services Overview</h1>
+	<p>
+		notifly supports 10 notification services out of the box. Each service uses a URL scheme to
+		encode its configuration — no config files, no environment-variable conventions, just a URL
+		string you can store wherever your credentials live.
+	</p>
+
+	<h2>All services</h2>
+
+	<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:1.5rem 0;">
+		{
+			services.map((s) => (
+				<ServiceCard name={s.name} scheme={s.scheme} color={s.color} href={s.href} />
+			))
+		}
+	</div>
+
+	<h2>URL scheme reference</h2>
+	<table>
+		<thead>
+			<tr>
+				<th>Service</th>
+				<th>Category</th>
+				<th>URL Format</th>
+			</tr>
+		</thead>
+		<tbody>
+			{
+				services.map((s) => (
+					<tr>
+						<td>
+							<a href={s.href}>{s.name}</a>
+						</td>
+						<td>{s.category}</td>
+						<td>
+							<code>{s.format}</code>
+						</td>
+					</tr>
+				))
+			}
+		</tbody>
+	</table>
+
+	<h2>How URL schemes work</h2>
+	<p>
+		notifly URLs follow a standard structure based on Web <code>URL</code> parsing. The scheme
+		(<code>discord://</code>, <code>ntfy://</code>, etc.) identifies the service. The rest of the
+		URL encodes the credentials and configuration for that service:
+	</p>
+
+	<ul>
+		<li>The <strong>hostname</strong> is typically the primary identifier (e.g. webhook ID, topic)</li>
+		<li>The <strong>path</strong> carries additional parameters (e.g. token, channel)</li>
+		<li>
+			<strong>Query parameters</strong> are used for optional fields on some services
+		</li>
+	</ul>
+
+	<p>
+		Each service page documents its exact URL format and where to find the required credentials.
+	</p>
+
+	<h2>Custom services</h2>
+	<p>
+		Need a service that isn't listed? See the <a href="/docs/guides/custom-services"
+			>Custom Services guide</a
+		> to register your own service plugin.
+	</p>
+</DocsLayout>

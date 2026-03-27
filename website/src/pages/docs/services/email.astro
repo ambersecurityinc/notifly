@@ -1,0 +1,130 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Email (SMTP)"
+	description="Send email notifications via MailChannels or Resend HTTP gateway using notifly."
+	section="Services"
+	prev={{ title: 'Pushbullet', href: '/docs/services/pushbullet' }}
+	next={{ title: 'Webhook (Generic)', href: '/docs/services/webhook' }}
+>
+	<h1>Email</h1>
+	<p>
+		Send email notifications via an HTTP email gateway. Raw SMTP is not supported in Web API
+		environments, so notifly uses gateways: <strong>MailChannels</strong> (free on Cloudflare Workers)
+		or <strong>Resend</strong> (free tier available).
+	</p>
+
+	<h2>URL format</h2>
+	<CodeBlock
+		code="mailto://user:gateway@host?to=recipient@example.com[&api_key=xxx][&from=sender@domain]"
+		lang="text"
+		label="scheme"
+	/>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Field</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>to</code></td>
+				<td>Yes</td>
+				<td>Recipient email address</td>
+			</tr>
+			<tr>
+				<td><code>gateway</code></td>
+				<td>Yes</td>
+				<td><code>mailchannels</code> or <code>resend</code></td>
+			</tr>
+			<tr>
+				<td><code>user</code></td>
+				<td>No</td>
+				<td>Sender username (local part of From address)</td>
+			</tr>
+			<tr>
+				<td><code>host</code></td>
+				<td>No</td>
+				<td>Sender domain</td>
+			</tr>
+			<tr>
+				<td><code>api_key</code></td>
+				<td>Resend only</td>
+				<td>Your Resend API key</td>
+			</tr>
+			<tr>
+				<td><code>from</code></td>
+				<td>No</td>
+				<td>Full sender email address (overrides user@host)</td>
+			</tr>
+			<tr>
+				<td><code>cc</code></td>
+				<td>No</td>
+				<td>CC recipient</td>
+			</tr>
+			<tr>
+				<td><code>bcc</code></td>
+				<td>No</td>
+				<td>BCC recipient</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>MailChannels example (Cloudflare Workers)</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  {
+    urls: [
+      'mailto://alerts:mailchannels@mycompany.com?to=team@mycompany.com'
+    ],
+  },
+  { title: 'Deploy Alert', body: 'Production deploy completed', type: 'success' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Resend example</h2>
+	<CodeBlock
+		code={`await notify(
+  {
+    urls: [
+      'mailto://alerts:resend@mycompany.com?to=team@mycompany.com&api_key=re_xxxxxxxxxx'
+    ],
+  },
+  { title: 'Alert', body: 'Something happened', type: 'warning' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Getting credentials</h2>
+	<h3>MailChannels</h3>
+	<p>
+		MailChannels is available for free on Cloudflare Workers with no additional configuration — it's
+		baked into the Cloudflare network. See the <a href="/docs/guides/cloudflare-workers"
+			>Cloudflare Workers guide</a
+		> for setup details.
+	</p>
+
+	<h3>Resend</h3>
+	<ol>
+		<li>Sign up at <a href="https://resend.com" target="_blank" rel="noopener">resend.com</a>.</li>
+		<li>Go to <strong>API Keys</strong> → <strong>Create API Key</strong>.</li>
+		<li>Add your sending domain and verify DNS records.</li>
+		<li>Copy the API key (starts with <code>re_</code>).</li>
+	</ol>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>Raw SMTP (ports 25/465/587) is blocked in most serverless environments.</li>
+		<li>MailChannels only works from Cloudflare Workers networks.</li>
+		<li>Resend requires a verified sending domain for production use.</li>
+	</ul>
+</DocsLayout>

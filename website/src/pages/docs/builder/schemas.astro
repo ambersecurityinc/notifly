@@ -1,0 +1,147 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Schemas"
+	description="Service schema API for the notifly headless URL builder."
+	section="Builder"
+	prev={{ title: 'Builder Overview', href: '/docs/builder' }}
+	next={{ title: 'Validation', href: '/docs/builder/validation' }}
+>
+	<h1>Schemas</h1>
+	<p>
+		Service schemas describe the fields, labels, validation rules, and help text for each
+		notification service. Use them to render forms or build configuration UIs without hardcoding
+		service-specific knowledge.
+	</p>
+
+	<h2>getServiceSchemas()</h2>
+	<p>Returns all service schemas as an array.</p>
+
+	<CodeBlock
+		code={`import { getServiceSchemas } from '@ambersecurityinc/notifly/builder';
+
+const schemas = getServiceSchemas();
+// → ServiceSchema[]`}
+		lang="typescript"
+	/>
+
+	<h2>getServiceSchema(service)</h2>
+	<p>Get the schema for a specific service by its registry key.</p>
+
+	<CodeBlock
+		code={`import { getServiceSchema } from '@ambersecurityinc/notifly/builder';
+
+const schema = getServiceSchema('discord');
+// → ServiceSchema | undefined
+
+console.log(schema?.label);   // 'Discord'
+console.log(schema?.fields);  // [{ key: 'webhook_id', ... }, ...]`}
+		lang="typescript"
+	/>
+
+	<h2>searchServices(query)</h2>
+	<p>
+		Case-insensitive fuzzy search across label, description, category, scheme, and service key.
+		Returns all schemas if the query is empty.
+	</p>
+
+	<CodeBlock
+		code={`import { searchServices } from '@ambersecurityinc/notifly/builder';
+
+const results = searchServices('slack');
+// → [{ service: 'slack', label: 'Slack', ... }]
+
+const chatServices = searchServices('chat');
+// → Discord, Slack, Telegram, Teams`}
+		lang="typescript"
+	/>
+
+	<h2>getServicesByCategory(category)</h2>
+	<p>Filter schemas by category key.</p>
+
+	<CodeBlock
+		code={`import { getServicesByCategory } from '@ambersecurityinc/notifly/builder';
+import type { ServiceCategory } from '@ambersecurityinc/notifly/builder';
+
+const chatServices = getServicesByCategory('chat');
+// → [Discord, Slack, Telegram, Teams]
+
+const selfHosted = getServicesByCategory('self-hosted');
+// → [ntfy, Gotify]`}
+		lang="typescript"
+	/>
+
+	<p>Valid category values:</p>
+	<table>
+		<thead>
+			<tr>
+				<th>Key</th>
+				<th>Label</th>
+				<th>Services</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr><td><code>chat</code></td><td>Chat &amp; Messaging</td><td>Discord, Slack, Telegram, Teams</td></tr>
+			<tr><td><code>push</code></td><td>Push Notifications</td><td>Pushover, Pushbullet</td></tr>
+			<tr><td><code>email</code></td><td>Email</td><td>Email</td></tr>
+			<tr><td><code>webhook</code></td><td>Custom Webhooks</td><td>Webhook</td></tr>
+			<tr><td><code>self-hosted</code></td><td>Self-Hosted</td><td>ntfy, Gotify</td></tr>
+		</tbody>
+	</table>
+
+	<h2>getCategories()</h2>
+	<p>Returns all categories with their display labels and service counts.</p>
+
+	<CodeBlock
+		code={`import { getCategories } from '@ambersecurityinc/notifly/builder';
+
+const categories = getCategories();
+// → [
+//   { key: 'chat', label: 'Chat & Messaging', count: 4 },
+//   { key: 'push', label: 'Push Notifications', count: 2 },
+//   { key: 'email', label: 'Email', count: 1 },
+//   { key: 'webhook', label: 'Custom Webhooks', count: 1 },
+//   { key: 'self-hosted', label: 'Self-Hosted', count: 2 },
+// ]`}
+		lang="typescript"
+	/>
+
+	<h2>ServiceSchema type</h2>
+	<CodeBlock
+		code={`interface ServiceSchema {
+  service: string;         // Registry key, e.g. 'discord'
+  label: string;           // Display name, e.g. 'Discord'
+  description: string;     // Short description
+  schemes: string[];       // URL scheme prefixes, e.g. ['discord']
+  category: ServiceCategory;
+  iconHint: string;        // Icon identifier hint
+  fields: ServiceField[];
+}
+
+interface ServiceField {
+  key: string;             // Field identifier
+  label: string;           // Display label
+  type: FieldType;         // 'text' | 'password' | 'select' | 'boolean' | 'number'
+  required: boolean;
+  sensitive: boolean;      // Should be masked in UI
+  placeholder?: string;
+  helpText?: string;
+  defaultValue?: string | number | boolean;
+  options?: FieldOption[];
+  validation?: FieldValidation;
+}
+
+interface FieldValidation {
+  pattern?: string;     // Regex pattern
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+}`}
+		lang="typescript"
+		label="types"
+	/>
+</DocsLayout>

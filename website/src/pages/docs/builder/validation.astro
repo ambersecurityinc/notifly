@@ -1,0 +1,138 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Validation"
+	description="Field validation API for the notifly headless URL builder."
+	section="Builder"
+	prev={{ title: 'Schemas', href: '/docs/builder/schemas' }}
+	next={{ title: 'URL Generation', href: '/docs/builder/url-generation' }}
+>
+	<h1>Validation</h1>
+	<p>
+		Validate user-provided field values against a service schema before building a URL. This gives
+		you typed, structured errors you can display in your UI.
+	</p>
+
+	<h2>validateFields()</h2>
+	<CodeBlock
+		code={`function validateFields(
+  service: string,
+  fields: Record<string, string | number | boolean>,
+): ValidationError[]`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<p>
+		Returns an array of <code>ValidationError</code> objects. An empty array means all fields are valid.
+	</p>
+
+	<CodeBlock
+		code={`interface ValidationError {
+  field: string;    // The field key that failed
+  message: string;  // Human-readable error message
+}`}
+		lang="typescript"
+		label="ValidationError"
+	/>
+
+	<h2>Examples</h2>
+
+	<h3>Valid input</h3>
+	<CodeBlock
+		code={`import { validateFields } from '@ambersecurityinc/notifly/builder';
+
+const errors = validateFields('discord', {
+  webhook_id: '1234567890',
+  webhook_token: 'abcdefghijklmnopqrst',
+});
+
+console.log(errors); // []`}
+		lang="typescript"
+	/>
+
+	<h3>Missing required field</h3>
+	<CodeBlock
+		code={`const errors = validateFields('discord', {
+  webhook_id: '1234567890',
+  webhook_token: '',       // empty — required field
+});
+
+console.log(errors);
+// [{ field: 'webhook_token', message: 'Required' }]`}
+		lang="typescript"
+	/>
+
+	<h3>Pattern mismatch</h3>
+	<CodeBlock
+		code={`const errors = validateFields('discord', {
+  webhook_id: 'not-a-number',  // must match /^\d+$/
+  webhook_token: 'valid-token',
+});
+
+console.log(errors);
+// [{ field: 'webhook_id', message: 'Invalid format' }]`}
+		lang="typescript"
+	/>
+
+	<h3>Unknown service</h3>
+	<CodeBlock
+		code={`const errors = validateFields('unknown', {});
+
+console.log(errors);
+// [{ field: 'service', message: 'Unknown service: unknown' }]`}
+		lang="typescript"
+	/>
+
+	<h2>UI integration pattern</h2>
+	<CodeBlock
+		code={`import { validateFields, buildUrl } from '@ambersecurityinc/notifly/builder';
+
+function handleSubmit(formValues: Record<string, string>) {
+  const errors = validateFields('discord', formValues);
+
+  if (errors.length > 0) {
+    // Map errors to form fields
+    const fieldErrors: Record<string, string> = {};
+    for (const err of errors) {
+      fieldErrors[err.field] = err.message;
+    }
+    setFormErrors(fieldErrors);
+    return;
+  }
+
+  const { url } = buildUrl('discord', formValues);
+  saveNotificationUrl(url);
+}`}
+		lang="typescript"
+		label="form submit handler"
+	/>
+
+	<h2>What gets validated</h2>
+	<ul>
+		<li><strong>Required fields</strong> — empty strings or missing keys fail</li>
+		<li>
+			<strong>Pattern</strong> — if <code>validation.pattern</code> is set, the value must match the
+			regex
+		</li>
+		<li>
+			<strong>minLength / maxLength</strong> — string length constraints (e.g. Pushover keys must be
+			exactly 30 chars)
+		</li>
+		<li><strong>min / max</strong> — numeric range constraints</li>
+		<li>
+			<strong>select options</strong> — value must be one of the defined <code>options[].value</code>
+			entries
+		</li>
+	</ul>
+
+	<blockquote>
+		<p>
+			<strong>Tip:</strong> Optional fields with empty values are not validated — only required
+			fields trigger errors for missing values.
+		</p>
+	</blockquote>
+</DocsLayout>

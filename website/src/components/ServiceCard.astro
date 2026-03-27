@@ -1,0 +1,55 @@
+---
+interface Props {
+	name: string;
+	scheme: string;
+	color: string;
+	href?: string;
+}
+const { name, scheme, color, href } = Astro.props;
+const Tag = href ? 'a' : 'div';
+---
+
+<Tag
+	href={href}
+	style={`display:block;background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:10px;padding:16px;transition:all 0.3s ease;cursor:${href ? 'pointer' : 'default'};text-decoration:none;`}
+	class="service-card"
+	data-color={color}
+>
+	<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+		<div
+			style={`width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;`}
+			class="service-dot"
+		>
+		</div>
+		<span
+			style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:var(--color-text);"
+			>{name}</span
+		>
+	</div>
+	<code style="font-size:11px;color:#555;font-family:var(--font-mono);letter-spacing:-0.02em;"
+		>{scheme}</code
+	>
+</Tag>
+
+<style>
+	.service-card:hover {
+		transform: translateY(-2px);
+	}
+	.service-card:hover .service-dot {
+		box-shadow: 0 0 10px currentColor;
+	}
+</style>
+
+<script>
+	document.querySelectorAll<HTMLElement>('.service-card').forEach((card) => {
+		const color = card.getAttribute('data-color') ?? '#888';
+		card.addEventListener('mouseenter', () => {
+			card.style.background = `${color}08`;
+			card.style.borderColor = `${color}30`;
+		});
+		card.addEventListener('mouseleave', () => {
+			card.style.background = 'var(--color-surface)';
+			card.style.borderColor = 'var(--color-border-subtle)';
+		});
+	});
+</script>

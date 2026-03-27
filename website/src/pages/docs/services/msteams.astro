@@ -1,0 +1,89 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Microsoft Teams"
+	description="Send notifications to Microsoft Teams channels via incoming webhooks using notifly."
+	section="Services"
+	prev={{ title: 'Telegram', href: '/docs/services/telegram' }}
+	next={{ title: 'ntfy', href: '/docs/services/ntfy' }}
+>
+	<h1>Microsoft Teams</h1>
+	<p>Send notifications to Teams channels via incoming webhooks.</p>
+
+	<h2>URL format</h2>
+	<CodeBlock
+		code="msteams://group_id[@tenant_id]/channel_id/webhook_id"
+		lang="text"
+		label="scheme"
+	/>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>group_id</code></td>
+				<td>Yes</td>
+				<td>GUID before the <code>@</code> in the webhookb2 path segment</td>
+			</tr>
+			<tr>
+				<td><code>tenant_id</code></td>
+				<td>No</td>
+				<td>GUID after the <code>@</code>. Leave blank if not present.</td>
+			</tr>
+			<tr>
+				<td><code>channel_id</code></td>
+				<td>Yes</td>
+				<td>Path segment after <code>/IncomingWebhook/</code></td>
+			</tr>
+			<tr>
+				<td><code>webhook_id</code></td>
+				<td>Yes</td>
+				<td>Final path segment in the Teams webhook URL</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  { urls: ['msteams://groupGUID@tenantGUID/channelID/webhookID'] },
+  { title: 'Release', body: 'v3.0 deployed successfully', type: 'success' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<ol>
+		<li>Open the Teams channel you want to post to.</li>
+		<li>Click the <strong>…</strong> (More options) next to the channel name.</li>
+		<li>Select <strong>Connectors</strong> → <strong>Incoming Webhook</strong> → <strong>Configure</strong>.</li>
+		<li>Give it a name and click <strong>Create</strong>.</li>
+		<li>Copy the webhook URL — it will look like:
+			<CodeBlock
+				code={`https://your-org.webhook.office.com/webhookb2/GROUP_GUID@TENANT_GUID/IncomingWebhook/CHANNEL_ID/WEBHOOK_ID`}
+				lang="text"
+				label="teams webhook url"
+			/>
+		</li>
+	</ol>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>Microsoft Teams is deprecating connector webhooks in favour of workflows. Check your org's policies.</li>
+		<li>
+			The <code>type</code> field maps to Teams message card <code>themeColor</code>:
+			<code>success</code> → green, <code>failure</code> → red, <code>warning</code> → orange.
+		</li>
+	</ul>
+</DocsLayout>

@@ -1,0 +1,136 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import SmartPasteDemo from '../../../components/SmartPasteDemo.astro';
+---
+
+<DocsLayout
+	title="Smart Paste"
+	description="Auto-detect and convert raw webhook URLs to notifly format with smartParse()."
+	section="Builder"
+	prev={{ title: 'URL Generation', href: '/docs/builder/url-generation' }}
+	next={{ title: 'Custom Services', href: '/docs/guides/custom-services' }}
+>
+	<h1>Smart Paste</h1>
+	<p>
+		The smart paste functions let users paste any URL — a raw webhook URL copied from Discord
+		settings, a Slack app config page, etc. — and get back a notifly URL ready to use.
+	</p>
+
+	<div style="max-width:480px;margin:1.5rem 0;">
+		<SmartPasteDemo />
+	</div>
+
+	<h2>smartParse()</h2>
+	<p>
+		The all-in-one function. Accepts either a raw provider URL (<code>https://discord.com/...</code>)
+		or an existing notifly URL (<code>discord://...</code>) and returns a normalised result.
+	</p>
+
+	<CodeBlock
+		code={`function smartParse(input: string): DetectResult | null`}
+		lang="typescript"
+		label="signature"
+	/>
+
+	<CodeBlock
+		code={`interface DetectResult {
+  service: string;
+  notiflyUrl: string;
+  fields: Record<string, string>;
+}`}
+		lang="typescript"
+		label="DetectResult"
+	/>
+
+	<CodeBlock
+		code={`import { smartParse } from '@ambersecurityinc/notifly/builder';
+
+// Raw Discord webhook URL
+const r1 = smartParse('https://discord.com/api/webhooks/1234567890/mytoken');
+// → {
+//   service: 'discord',
+//   notiflyUrl: 'discord://1234567890/mytoken',
+//   fields: { webhook_id: '1234567890', webhook_token: 'mytoken' },
+// }
+
+// Already a notifly URL — decomposed
+const r2 = smartParse('discord://1234567890/mytoken');
+// → { service: 'discord', notiflyUrl: 'discord://1234567890/mytoken', fields: { ... } }
+
+// Unknown URL
+const r3 = smartParse('https://example.com/something');
+// → null`}
+		lang="typescript"
+	/>
+
+	<h2>detectAndConvert()</h2>
+	<p>
+		Convert a raw provider URL (http/https from a service's dashboard) to a notifly URL. Returns
+		<code>null</code> if the URL doesn't match any known pattern.
+	</p>
+
+	<CodeBlock
+		code={`import { detectAndConvert } from '@ambersecurityinc/notifly/builder';
+
+const result = detectAndConvert(
+  'https://hooks.slack.com/services/T00/B00/XXXX'
+);
+// → { service: 'slack', notiflyUrl: 'slack://T00/B00/XXXX', fields: { ... } }
+
+// Won't match a notifly URL (use decomposeUrl for that)
+detectAndConvert('discord://123/abc'); // → null`}
+		lang="typescript"
+	/>
+
+	<h2>isRawServiceUrl()</h2>
+	<p>
+		Returns <code>true</code> if the string looks like a raw provider URL (http/https), rather than
+		a notifly scheme URL.
+	</p>
+
+	<CodeBlock
+		code={`import { isRawServiceUrl } from '@ambersecurityinc/notifly/builder';
+
+isRawServiceUrl('https://discord.com/api/webhooks/123/abc'); // true
+isRawServiceUrl('discord://123/abc');                        // false
+isRawServiceUrl('not a url at all');                         // false`}
+		lang="typescript"
+	/>
+
+	<h2>Supported raw URL conversions</h2>
+	<table>
+		<thead>
+			<tr>
+				<th>Service</th>
+				<th>Raw URL pattern</th>
+				<th>Converted to</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Discord</td>
+				<td><code>discord.com/api/webhooks/ID/TOKEN</code></td>
+				<td><code>discord://ID/TOKEN</code></td>
+			</tr>
+			<tr>
+				<td>Slack</td>
+				<td><code>hooks.slack.com/services/A/B/C</code></td>
+				<td><code>slack://A/B/C</code></td>
+			</tr>
+			<tr>
+				<td>ntfy</td>
+				<td><code>ntfy.sh/TOPIC</code></td>
+				<td><code>ntfy://TOPIC</code></td>
+			</tr>
+		</tbody>
+	</table>
+
+	<blockquote>
+		<p>
+			More raw URL patterns will be added as services are updated to expose copyable webhook URLs.
+			Use <a href="/docs/builder/url-generation"><code>buildUrl()</code></a> with manual field entry for
+			services not yet covered.
+		</p>
+	</blockquote>
+</DocsLayout>

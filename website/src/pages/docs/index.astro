@@ -1,0 +1,108 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Quick Start"
+	description="Get started with notifly in under two minutes."
+	section="Getting Started"
+	next={{ title: 'Installation', href: '/docs/installation' }}
+>
+	<h1>Quick Start</h1>
+	<p>Get notifly sending notifications in under two minutes.</p>
+
+	<h2>Install</h2>
+	<CodeBlock code="npm install @ambersecurityinc/notifly" lang="bash" label="terminal" />
+
+	<h2>Send your first notification</h2>
+	<p>
+		Import <code>notify</code> and pass a list of notification URLs along with your message. Every
+		URL is dispatched concurrently and results are returned in order.
+	</p>
+
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+const results = await notify(
+  {
+    urls: [
+      'discord://1234567890/your_webhook_token',
+      'ntfy://my-alerts',
+    ],
+  },
+  {
+    title: 'Hello from notifly',
+    body: 'Your first notification!',
+    type: 'success',
+  }
+);
+
+console.log(results);
+// [
+//   { success: true, service: 'discord' },
+//   { success: true, service: 'ntfy' },
+// ]`}
+		lang="typescript"
+		label="send.ts"
+	/>
+
+	<h2>What just happened?</h2>
+	<ul>
+		<li>
+			<strong>notify()</strong> accepted an options object with <code>urls</code> — a list of notification
+			URLs — and a message object.
+		</li>
+		<li>Both services were called <strong>concurrently</strong> via <code>Promise.allSettled</code>.</li>
+		<li>
+			Each result has a <code>success</code> boolean, the <code>service</code> name, and an optional
+			<code>error</code> string.
+		</li>
+	</ul>
+
+	<h2>Notification types</h2>
+	<p>The <code>type</code> field maps to service-native message levels where supported:</p>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Type</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>info</code></td>
+				<td>Default informational message</td>
+			</tr>
+			<tr>
+				<td><code>success</code></td>
+				<td>Positive outcome</td>
+			</tr>
+			<tr>
+				<td><code>warning</code></td>
+				<td>Something needs attention</td>
+			</tr>
+			<tr>
+				<td><code>failure</code></td>
+				<td>Error or critical alert</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Next steps</h2>
+	<ul>
+		<li>
+			<a href="/docs/installation">Installation</a> — runtimes, TypeScript, bundle size
+		</li>
+		<li>
+			<a href="/docs/api-reference">API Reference</a> — full documentation for every export
+		</li>
+		<li>
+			<a href="/docs/services">Services</a> — URL scheme formats for all 10 supported services
+		</li>
+		<li>
+			<a href="/docs/builder">Builder</a> — headless URL builder for building your own UI
+		</li>
+	</ul>
+</DocsLayout>

@@ -1,0 +1,442 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import HeroAnimation from '../components/HeroAnimation.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import SmartPasteDemo from '../components/SmartPasteDemo.astro';
+import ServiceCard from '../components/ServiceCard.astro';
+
+const services = [
+	{ name: 'Discord', scheme: 'discord://', color: '#5865F2', category: 'chat', href: '/docs/services/discord' },
+	{ name: 'Slack', scheme: 'slack://', color: '#E01E5A', category: 'chat', href: '/docs/services/slack' },
+	{ name: 'Telegram', scheme: 'tgram://', color: '#26A5E4', category: 'chat', href: '/docs/services/telegram' },
+	{ name: 'Teams', scheme: 'msteams://', color: '#6264A7', category: 'chat', href: '/docs/services/msteams' },
+	{ name: 'ntfy', scheme: 'ntfy://', color: '#57A85C', category: 'self-hosted', href: '/docs/services/ntfy' },
+	{ name: 'Gotify', scheme: 'gotify://', color: '#3F8EBF', category: 'self-hosted', href: '/docs/services/gotify' },
+	{ name: 'Pushover', scheme: 'pover://', color: '#249DF1', category: 'push', href: '/docs/services/pushover' },
+	{ name: 'Pushbullet', scheme: 'pbul://', color: '#4CB749', category: 'push', href: '/docs/services/pushbullet' },
+	{ name: 'Email', scheme: 'mailto://', color: '#D44638', category: 'email', href: '/docs/services/email' },
+	{ name: 'Webhook', scheme: 'json://', color: '#FF6B35', category: 'webhook', href: '/docs/services/webhook' },
+];
+
+const codeNotify = `import { notify } from '@ambersecurityinc/notifly';
+
+const results = await notify(
+  { urls: [
+    'discord://webhook_id/token',
+    'ntfy://my-alerts',
+    'pover://user_key/api_token',
+  ]},
+  {
+    title: 'Deployment Complete',
+    body: 'v2.4.1 is live',
+    type: 'success',
+  }
+);
+// → [{ success: true, service: 'discord' },
+//    { success: true, service: 'ntfy' },
+//    { success: true, service: 'pushover' }]`;
+
+const codeBuilder = `import {
+  getServiceSchemas,
+  validateFields,
+  buildUrl,
+  smartParse,
+} from '@ambersecurityinc/notifly/builder';
+
+// Paste any webhook URL
+const result = smartParse(
+  'https://discord.com/api/webhooks/123/abc'
+);
+// → { service: 'discord',
+//     notiflyUrl: 'discord://123/abc',
+//     fields: { webhook_id: '123',
+//               webhook_token: 'abc' } }
+
+// Validate before building
+const errors = validateFields('discord', {
+  webhook_id: '123',
+  webhook_token: '',
+});
+// → [{ field: 'webhook_token',
+//       message: 'Required' }]`;
+
+const codeCustom = `import { registerService } from '@ambersecurityinc/notifly';
+
+registerService({
+  schemas: ['myapp'],
+  parseUrl(url) {
+    return {
+      service: 'myapp',
+      apiKey: url.hostname,
+      channel: url.pathname.slice(1),
+    };
+  },
+  async send(config, message) {
+    const res = await fetch(
+      \`https://api.myapp.com/\${config.channel}\`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': \`Bearer \${config.apiKey}\`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: message.body }),
+      }
+    );
+    return { success: res.ok, service: 'myapp' };
+  },
+});`;
+
+const tabs = [
+	{ key: 'notify', label: 'notify()', code: codeNotify, desc: 'send notifications' },
+	{ key: 'builder', label: 'builder', code: codeBuilder, desc: 'headless url builder' },
+	{ key: 'custom', label: 'registerService()', code: codeCustom, desc: 'custom services' },
+];
+---
+
+<BaseLayout
+	title="notifly — One call. Every channel."
+	description="Send notifications to Discord, Slack, Teams, ntfy, Pushover, and more from a single notify() call. Web API only. Runs everywhere."
+>
+	<Navbar transparent />
+
+	<!-- Hero -->
+	<section style="max-width:1200px;margin:0 auto;padding:80px 40px 100px;" class="hero-section">
+		<div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;" class="hero-grid">
+			<div style="animation:fadeSlideUp 0.6s ease 100ms both;">
+				<div
+					style="font-family:var(--font-mono);font-size:11px;color:var(--color-accent);margin-bottom:16px;letter-spacing:0.12em;text-transform:uppercase;"
+				>
+					npm i @ambersecurityinc/notifly
+				</div>
+				<h1
+					style="font-family:var(--font-serif);font-size:clamp(48px,5vw,68px);font-weight:400;line-height:1.05;margin-bottom:20px;letter-spacing:-0.03em;"
+				>
+					One call.<br />
+					<span style="color:var(--color-accent);">Every</span> channel.
+				</h1>
+				<p
+					style="font-size:15px;line-height:1.7;color:#666;max-width:440px;margin-bottom:32px;font-family:var(--font-heading);"
+				>
+					Dispatch notifications to Discord, Slack, Teams, ntfy, Pushover, and more — from a
+					single <code
+						style="color:#888;background:#111;padding:1px 5px;border-radius:3px;font-size:12px;"
+						>notify()</code
+					> call. Web API only. Runs everywhere.
+				</p>
+				<div style="display:flex;gap:10px;flex-wrap:wrap;animation:fadeSlideUp 0.6s ease 300ms both;">
+					<a
+						href="/docs"
+						style="display:inline-flex;align-items:center;background:var(--color-accent);color:#050505;padding:11px 24px;border-radius:9px;font-family:var(--font-heading);font-weight:700;font-size:13px;text-decoration:none;box-shadow:0 0 24px var(--color-accent-glow);"
+						>Get Started →</a
+					>
+					<a
+						href="https://github.com/ambersecurityinc/notifly"
+						style="display:inline-flex;align-items:center;background:transparent;color:#888;padding:11px 24px;border-radius:9px;font-family:var(--font-heading);font-weight:700;font-size:13px;text-decoration:none;border:1px solid #222;"
+						target="_blank"
+						rel="noopener">View Source</a
+					>
+				</div>
+			</div>
+			<div style="animation:fadeSlideUp 0.8s ease 400ms both;">
+				<HeroAnimation />
+			</div>
+		</div>
+	</section>
+
+	<!-- Features -->
+	<section style="max-width:1200px;margin:0 auto;padding:20px 40px 80px;" class="features-section">
+		<FeatureGrid />
+	</section>
+
+	<!-- Divider -->
+	<div style="max-width:1200px;margin:0 auto;padding:0 40px;">
+		<div
+			style="height:1px;background:linear-gradient(90deg,transparent,#1a1a1a 20%,#1a1a1a 80%,transparent);"
+		>
+		</div>
+	</div>
+
+	<!-- Code Examples -->
+	<section style="max-width:1200px;margin:0 auto;padding:80px 40px;" class="code-section">
+		<div style="margin-bottom:36px;">
+			<h2
+				style="font-family:var(--font-serif);font-size:clamp(36px,4vw,48px);font-weight:400;letter-spacing:-0.03em;margin-bottom:10px;"
+			>
+				Dead simple <span style="color:var(--color-accent);">API</span>
+			</h2>
+			<p style="font-family:var(--font-heading);font-size:13px;color:#555;">Three exports. That's it.</p>
+		</div>
+
+		<!-- Tabs -->
+		<div
+			style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;"
+		>
+			{
+				tabs.map((t) => (
+					<button
+						data-tab={t.key}
+						style="background:transparent;border:1px solid transparent;border-radius:7px;padding:7px 14px;color:#555;font-family:var(--font-mono);font-size:11.5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;"
+						class="tab-btn"
+					>
+						{t.label}
+					</button>
+				))
+			}
+		</div>
+
+		{
+			tabs.map((t) => (
+				<div data-panel={t.key} class="tab-panel" style="display:none;">
+					<div
+						style="border-radius:10px;overflow:hidden;border:1px solid var(--color-border);"
+					>
+						<div
+							style="background:var(--color-surface);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--color-border);"
+						>
+							<span
+								style="font-size:11px;color:#555;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em;"
+							>
+								{t.desc}
+							</span>
+							<button
+								data-copy-code={t.key}
+								style="background:none;border:1px solid #222;border-radius:5px;color:#555;cursor:pointer;padding:3px 8px;font-size:10px;font-family:var(--font-mono);transition:all 0.2s;"
+							>
+								copy
+							</button>
+						</div>
+						<pre
+							style="background:var(--color-surface-2);margin:0;padding:16px;overflow-x:auto;font-size:12px;line-height:1.7;font-family:var(--font-mono);-webkit-overflow-scrolling:touch;"
+							data-raw-code={t.key}
+						>
+							<code style="color:#ccc;">{t.code}</code>
+						</pre>
+					</div>
+				</div>
+			))
+		}
+	</section>
+
+	<!-- Smart Paste -->
+	<section style="max-width:1200px;margin:0 auto;padding:0 40px 80px;" class="paste-section">
+		<div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;" class="paste-grid">
+			<div>
+				<h2
+					style="font-family:var(--font-serif);font-size:clamp(36px,4vw,48px);font-weight:400;letter-spacing:-0.03em;margin-bottom:14px;"
+				>
+					Smart <span style="color:var(--color-accent);">paste</span>
+				</h2>
+				<p
+					style="font-family:var(--font-heading);font-size:14px;color:#555;line-height:1.7;margin-bottom:20px;"
+				>
+					Paste a raw webhook URL from Discord, Slack, or any service. <code
+						style="color:#888;background:#111;padding:1px 5px;border-radius:3px;font-size:12px;"
+						>smartParse()</code
+					> auto-detects and converts.
+				</p>
+				<p style="font-family:var(--font-heading);font-size:14px;color:#555;line-height:1.7;">
+					No docs. No manual fields. Just paste.
+				</p>
+			</div>
+			<SmartPasteDemo />
+		</div>
+	</section>
+
+	<!-- Divider -->
+	<div style="max-width:1200px;margin:0 auto;padding:0 40px;">
+		<div
+			style="height:1px;background:linear-gradient(90deg,transparent,#1a1a1a 20%,#1a1a1a 80%,transparent);"
+		>
+		</div>
+	</div>
+
+	<!-- Services Grid -->
+	<section style="max-width:1200px;margin:0 auto;padding:80px 40px;" class="services-section">
+		<div style="margin-bottom:36px;">
+			<h2
+				style="font-family:var(--font-serif);font-size:clamp(36px,4vw,48px);font-weight:400;letter-spacing:-0.03em;margin-bottom:10px;"
+			>
+				10 services. <span style="color:var(--color-accent);">One interface.</span>
+			</h2>
+			<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
+				<span
+					style="font-family:var(--font-mono);font-size:10px;color:#444;display:flex;align-items:center;gap:4px;"
+					>💬 Chat (4)</span
+				>
+				<span
+					style="font-family:var(--font-mono);font-size:10px;color:#444;display:flex;align-items:center;gap:4px;"
+					>📲 Push (2)</span
+				>
+				<span
+					style="font-family:var(--font-mono);font-size:10px;color:#444;display:flex;align-items:center;gap:4px;"
+					>🏠 Self-Hosted (2)</span
+				>
+				<span
+					style="font-family:var(--font-mono);font-size:10px;color:#444;display:flex;align-items:center;gap:4px;"
+					>📧 Email (1)</span
+				>
+				<span
+					style="font-family:var(--font-mono);font-size:10px;color:#444;display:flex;align-items:center;gap:4px;"
+					>🔗 Webhook (1)</span
+				>
+			</div>
+		</div>
+		<div
+			style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;"
+			class="services-grid"
+		>
+			{
+				services.map((s) => (
+					<ServiceCard name={s.name} scheme={s.scheme} color={s.color} href={s.href} />
+				))
+			}
+		</div>
+	</section>
+
+	<!-- Runtimes -->
+	<section style="max-width:1200px;margin:0 auto;padding:0 40px 80px;" class="runtimes-section">
+		<div
+			style="background:var(--color-surface);border-radius:12px;border:1px solid var(--color-border-subtle);padding:40px;text-align:center;"
+		>
+			<div
+				style="font-family:var(--font-mono);font-size:10px;color:#444;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.12em;"
+			>
+				runs everywhere
+			</div>
+			<div
+				style="display:flex;justify-content:center;gap:48px;flex-wrap:wrap;"
+				class="runtimes-list"
+			>
+				{
+					[
+						{ name: 'CF Workers', icon: '⚡' },
+						{ name: 'Node 18+', icon: '🟢' },
+						{ name: 'Bun', icon: '🥟' },
+						{ name: 'Deno', icon: '🦕' },
+					].map((r) => (
+						<div style="display:flex;align-items:center;gap:6px;">
+							<span style="font-size:18px;">{r.icon}</span>
+							<span style="font-family:var(--font-heading);font-size:12px;color:#888;">
+								{r.name}
+							</span>
+						</div>
+					))
+				}
+			</div>
+		</div>
+	</section>
+
+	<!-- CTA -->
+	<section
+		style="max-width:1200px;margin:0 auto;padding:0 40px 120px;text-align:center;"
+		class="cta-section"
+	>
+		<h2
+			style="font-family:var(--font-serif);font-size:clamp(36px,4vw,52px);font-weight:400;letter-spacing:-0.03em;margin-bottom:20px;"
+		>
+			Start <span style="font-style:italic;">notifying.</span>
+		</h2>
+		<div
+			style="display:inline-block;background:var(--color-surface-2);border-radius:10px;border:1px solid var(--color-border);padding:14px 28px;font-family:var(--font-mono);font-size:14px;color:#888;margin-bottom:28px;"
+		>
+			<span style="color:var(--color-accent);">$</span> npm i @ambersecurityinc/notifly
+		</div>
+		<div style="display:flex;justify-content:center;">
+			<a
+				href="/docs"
+				style="display:inline-flex;align-items:center;background:var(--color-accent);color:#050505;padding:12px 28px;border-radius:9px;font-family:var(--font-heading);font-weight:700;font-size:13px;text-decoration:none;box-shadow:0 0 32px var(--color-accent-glow);"
+				>Read the Docs →</a
+			>
+		</div>
+	</section>
+
+	<Footer />
+</BaseLayout>
+
+<style>
+	@media (max-width: 768px) {
+		.hero-section {
+			padding: 40px 20px 60px !important;
+		}
+		.hero-grid {
+			grid-template-columns: 1fr !important;
+			gap: 40px !important;
+		}
+		.features-section {
+			padding: 20px 20px 60px !important;
+		}
+		.code-section {
+			padding: 60px 20px !important;
+		}
+		.paste-section {
+			padding: 0 20px 60px !important;
+		}
+		.paste-grid {
+			grid-template-columns: 1fr !important;
+			gap: 32px !important;
+		}
+		.services-section {
+			padding: 60px 20px !important;
+		}
+		.services-grid {
+			grid-template-columns: repeat(2, 1fr) !important;
+		}
+		.runtimes-section {
+			padding: 0 20px 60px !important;
+		}
+		.runtimes-list {
+			gap: 20px !important;
+		}
+		.cta-section {
+			padding: 0 20px 80px !important;
+		}
+	}
+</style>
+
+<script>
+	const tabData: Record<string, string> = {};
+	document.querySelectorAll<HTMLElement>('[data-raw-code]').forEach((el) => {
+		const key = el.getAttribute('data-raw-code') ?? '';
+		tabData[key] = el.querySelector('code')?.textContent ?? '';
+	});
+
+	function setTab(key: string) {
+		document.querySelectorAll<HTMLElement>('.tab-btn').forEach((btn) => {
+			const active = btn.getAttribute('data-tab') === key;
+			btn.style.background = active ? 'var(--color-accent-dim)' : 'transparent';
+			btn.style.border = `1px solid ${active ? 'var(--color-accent-border)' : 'transparent'}`;
+			btn.style.color = active ? 'var(--color-accent)' : '#555';
+		});
+		document.querySelectorAll<HTMLElement>('.tab-panel').forEach((panel) => {
+			panel.style.display = panel.getAttribute('data-panel') === key ? 'block' : 'none';
+		});
+	}
+
+	document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
+		btn.addEventListener('click', () => {
+			const key = btn.getAttribute('data-tab') ?? '';
+			setTab(key);
+		});
+	});
+
+	document.querySelectorAll<HTMLButtonElement>('[data-copy-code]').forEach((btn) => {
+		btn.addEventListener('click', () => {
+			const key = btn.getAttribute('data-copy-code') ?? '';
+			const code = tabData[key] ?? '';
+			navigator.clipboard.writeText(code.trim()).then(() => {
+				btn.textContent = 'copied!';
+				btn.style.color = 'var(--color-accent)';
+				setTimeout(() => {
+					btn.textContent = 'copy';
+					btn.style.color = '#555';
+				}, 2000);
+			});
+		});
+	});
+
+	// Init first tab
+	setTab('notify');
+</script>

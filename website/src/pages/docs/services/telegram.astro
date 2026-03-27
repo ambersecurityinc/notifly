@@ -1,0 +1,85 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Telegram"
+	description="Send notifications via Telegram bot messages using notifly."
+	section="Services"
+	prev={{ title: 'Slack', href: '/docs/services/slack' }}
+	next={{ title: 'Microsoft Teams', href: '/docs/services/msteams' }}
+>
+	<h1>Telegram</h1>
+	<p>Send notifications via Telegram bot messages to any chat or group.</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="tgram://bot_token/chat_id" lang="text" label="scheme" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>bot_token</code></td>
+				<td>Yes</td>
+				<td>Bot token from BotFather (e.g. <code>123456789:AABBccDDeeff...</code>)</td>
+			</tr>
+			<tr>
+				<td><code>chat_id</code></td>
+				<td>Yes</td>
+				<td>Numeric chat ID or username (e.g. <code>-1001234567890</code>)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  { urls: ['tgram://123456789:AABBccDDeeff/-1001234567890'] },
+  { title: 'Server Alert', body: 'CPU at 98%', type: 'failure' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<h3>Bot token</h3>
+	<ol>
+		<li>Open Telegram and search for <strong>@BotFather</strong>.</li>
+		<li>Send <code>/newbot</code> and follow the prompts.</li>
+		<li>BotFather will reply with your bot token — it looks like <code>123456789:AABBccDDeeff...</code>.</li>
+		<li>Keep this token secret — it's the password to your bot.</li>
+	</ol>
+
+	<h3>Chat ID</h3>
+	<ol>
+		<li>Add your bot to the target chat or group.</li>
+		<li>
+			Send a message in the chat, then open in a browser:
+			<CodeBlock
+				code="https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getUpdates"
+				lang="text"
+				label="api url"
+			/>
+		</li>
+		<li>Look for <code>chat.id</code> in the JSON response.</li>
+		<li>Alternatively, forward a message to <strong>@userinfobot</strong> to get your personal chat ID.</li>
+	</ol>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>
+			Group chat IDs are negative numbers (prefixed with <code>-</code>). Supergroup IDs start with
+			<code>-100</code>.
+		</li>
+		<li>The bot must be a member of the chat before it can send messages.</li>
+		<li>Telegram supports basic HTML and Markdown formatting in message bodies.</li>
+	</ul>
+</DocsLayout>

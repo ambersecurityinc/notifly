@@ -1,0 +1,125 @@
+---
+const demos = [
+	{
+		raw: 'https://discord.com/api/webhooks/14867536/2dvMDbSf',
+		converted: 'discord://14867536/2dvMDbSf',
+	},
+	{
+		raw: 'https://hooks.slack.com/services/T00/B00/xxxx',
+		converted: 'slack://T00/B00/xxxx',
+	},
+	{ raw: 'https://ntfy.sh/my-alerts', converted: 'ntfy://my-alerts' },
+];
+---
+
+<div
+	style="border-radius:12px;overflow:hidden;border:1px solid var(--color-border);background:#080808;"
+>
+	<div
+		style="padding:10px 16px;background:var(--color-surface);border-bottom:1px solid var(--color-border);display:flex;align-items:center;gap:8px;"
+	>
+		<div
+			style="width:10px;height:10px;border-radius:50%;background:var(--color-accent);"
+		>
+		</div>
+		<span
+			style="font-size:11px;color:#555;font-family:var(--font-mono);letter-spacing:0.05em;"
+			>smartParse()</span
+		>
+	</div>
+	<div style="padding:16px;">
+		<div style="margin-bottom:12px;">
+			<div
+				style="font-size:9px;color:#444;font-family:var(--font-mono);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.1em;"
+			>
+				paste any webhook url
+			</div>
+			<div
+				id="sp-input"
+				style="background:var(--color-surface-2);border-radius:6px;padding:10px 12px;border:1px solid var(--color-border);min-height:18px;font-family:var(--font-mono);font-size:11px;color:#888;word-break:break-all;line-height:1.5;"
+			>
+				<span id="sp-input-text"></span><span
+					id="sp-cursor"
+					style="color:var(--color-accent);opacity:1;">▌</span
+				>
+			</div>
+		</div>
+		<div style="display:flex;justify-content:center;padding:2px 0;">
+			<div
+				id="sp-arrow"
+				style="width:28px;height:28px;border-radius:50%;background:transparent;border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center;transition:all 0.4s ease;font-size:12px;"
+			>
+				↓
+			</div>
+		</div>
+		<div style="margin-top:6px;">
+			<div
+				style="font-size:9px;color:#444;font-family:var(--font-mono);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.1em;"
+			>
+				notifly url
+			</div>
+			<div
+				id="sp-output"
+				style="background:var(--color-surface-2);border-radius:6px;padding:10px 12px;border:1px solid var(--color-border);min-height:18px;font-family:var(--font-mono);font-size:11px;color:var(--color-accent);transition:all 0.4s ease;word-break:break-all;"
+			>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script define:vars={{ demos }}>
+	const inputEl = document.getElementById('sp-input-text');
+	const cursorEl = document.getElementById('sp-cursor');
+	const outputEl = document.getElementById('sp-output');
+	const arrowEl = document.getElementById('sp-arrow');
+
+	let idx = 0;
+
+	function runDemo() {
+		const demo = demos[idx % demos.length];
+		idx++;
+
+		// Reset
+		if (inputEl) inputEl.textContent = '';
+		if (outputEl) outputEl.textContent = '';
+		if (outputEl) {
+			outputEl.style.background = 'var(--color-surface-2)';
+			outputEl.style.borderColor = 'var(--color-border)';
+		}
+		if (arrowEl) {
+			arrowEl.style.background = 'transparent';
+			arrowEl.style.borderColor = 'var(--color-border)';
+			arrowEl.textContent = '↓';
+		}
+		if (cursorEl) cursorEl.style.opacity = '1';
+
+		// Type
+		let i = 0;
+		const typeInterval = setInterval(() => {
+			i++;
+			if (inputEl) inputEl.textContent = demo.raw.slice(0, i);
+			if (i >= demo.raw.length) {
+				clearInterval(typeInterval);
+				if (cursorEl) cursorEl.style.opacity = '0';
+				setTimeout(() => {
+					if (arrowEl) {
+						arrowEl.style.background = 'var(--color-accent-dim)';
+						arrowEl.style.borderColor = 'var(--color-accent-border)';
+						arrowEl.textContent = '⚡';
+					}
+					setTimeout(() => {
+						if (arrowEl) arrowEl.textContent = '✓';
+						if (outputEl) {
+							outputEl.textContent = demo.converted;
+							outputEl.style.background = 'var(--color-accent-dim)';
+							outputEl.style.borderColor = 'var(--color-accent-border)';
+						}
+						setTimeout(runDemo, 2800);
+					}, 600);
+				}, 400);
+			}
+		}, 28);
+	}
+
+	setTimeout(runDemo, 600);
+</script>

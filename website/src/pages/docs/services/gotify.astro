@@ -1,0 +1,92 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Gotify"
+	description="Send notifications via a self-hosted Gotify server using notifly."
+	section="Services"
+	prev={{ title: 'ntfy', href: '/docs/services/ntfy' }}
+	next={{ title: 'Pushover', href: '/docs/services/pushover' }}
+>
+	<h1>Gotify</h1>
+	<p>
+		Send push notifications via a self-hosted <a
+			href="https://gotify.net"
+			target="_blank"
+			rel="noopener">Gotify</a
+		> server. Gotify is a simple, self-hosted server for sending and receiving messages.
+	</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="gotify://host/token" lang="text" label="scheme" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>host</code></td>
+				<td>Yes</td>
+				<td>Hostname of your Gotify server (without <code>https://</code>)</td>
+			</tr>
+			<tr>
+				<td><code>token</code></td>
+				<td>Yes</td>
+				<td>Application token from your Gotify dashboard</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  { urls: ['gotify://gotify.myserver.com/Axxxxxxxxxxxx'] },
+  { title: 'Backup Complete', body: 'Daily backup finished', type: 'success' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<ol>
+		<li>Log in to your Gotify dashboard.</li>
+		<li>Go to <strong>Apps</strong> → <strong>Create Application</strong>.</li>
+		<li>Give it a name (e.g. "notifly") and click <strong>Create</strong>.</li>
+		<li>
+			Copy the application token — it looks like <code>Axxxxxxxxxxxx</code> and starts with
+			<code>A</code>.
+		</li>
+	</ol>
+
+	<h2>Self-hosting Gotify</h2>
+	<CodeBlock
+		code={`# Docker Compose example
+version: '3'
+services:
+  gotify:
+    image: gotify/server
+    ports:
+      - "80:80"
+    environment:
+      - GOTIFY_DEFAULTUSER_PASS=admin
+    volumes:
+      - ./gotify_data:/app/data`}
+		lang="yaml"
+		label="docker-compose.yml"
+	/>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>Gotify requires a self-hosted server — there is no public cloud service.</li>
+		<li>The application token is per-app, not per-user. Create one app per project for easier management.</li>
+		<li>HTTPS is strongly recommended for production servers.</li>
+	</ul>
+</DocsLayout>

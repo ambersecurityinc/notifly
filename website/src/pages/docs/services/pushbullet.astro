@@ -1,0 +1,83 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Pushbullet"
+	description="Send push notifications via Pushbullet using notifly."
+	section="Services"
+	prev={{ title: 'Pushover', href: '/docs/services/pushover' }}
+	next={{ title: 'Email (SMTP)', href: '/docs/services/email' }}
+>
+	<h1>Pushbullet</h1>
+	<p>
+		Send push notifications via <a href="https://www.pushbullet.com" target="_blank" rel="noopener"
+			>Pushbullet</a
+		> to all your devices or a specific one.
+	</p>
+
+	<h2>URL format</h2>
+	<CodeBlock code="pbul://access_token[/device_id][#channel]" lang="text" label="scheme" />
+
+	<table>
+		<thead>
+			<tr>
+				<th>Segment</th>
+				<th>Required</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>access_token</code></td>
+				<td>Yes</td>
+				<td>Your Pushbullet access token</td>
+			</tr>
+			<tr>
+				<td><code>device_id</code></td>
+				<td>No</td>
+				<td>Target a specific device by its <code>iden</code> value</td>
+			</tr>
+			<tr>
+				<td><code>channel</code></td>
+				<td>No</td>
+				<td>Push to a channel tag instead of a device</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+// Send to all devices
+await notify(
+  { urls: ['pbul://o.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'] },
+  { title: 'New Message', body: 'You have a new notification', type: 'info' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Finding your credentials</h2>
+	<ol>
+		<li>Sign in at <a href="https://www.pushbullet.com" target="_blank" rel="noopener">pushbullet.com</a>.</li>
+		<li>Go to <strong>Settings</strong> → <strong>Account</strong>.</li>
+		<li>Scroll to <strong>Access Tokens</strong> and click <strong>Create Access Token</strong>.</li>
+		<li>Copy the token — it starts with <code>o.</code>.</li>
+	</ol>
+
+	<h3>Finding a device ID</h3>
+	<p>To target a specific device, find its <code>iden</code> via the Pushbullet API:</p>
+	<CodeBlock
+		code={`curl https://api.pushbullet.com/v2/devices \\
+  -H "Access-Token: YOUR_ACCESS_TOKEN"`}
+		lang="bash"
+	/>
+
+	<h2>Quirks &amp; limitations</h2>
+	<ul>
+		<li>Pushbullet's free tier is limited to 500 pushes/month.</li>
+		<li>Pushbullet is less actively maintained than other services — consider ntfy or Pushover for new projects.</li>
+	</ul>
+</DocsLayout>

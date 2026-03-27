@@ -1,0 +1,130 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Installation"
+	description="Install notifly and configure it for your runtime environment."
+	section="Getting Started"
+	prev={{ title: 'Quick Start', href: '/docs' }}
+	next={{ title: 'API Reference', href: '/docs/api-reference' }}
+>
+	<h1>Installation</h1>
+
+	<h2>Package managers</h2>
+
+	<CodeBlock code="npm install @ambersecurityinc/notifly" lang="bash" label="npm" />
+	<CodeBlock code="pnpm add @ambersecurityinc/notifly" lang="bash" label="pnpm" />
+	<CodeBlock code="yarn add @ambersecurityinc/notifly" lang="bash" label="yarn" />
+	<CodeBlock code="bun add @ambersecurityinc/notifly" lang="bash" label="bun" />
+
+	<h2>Runtime requirements</h2>
+	<p>
+		notifly uses only the <strong>Web API</strong> — <code>fetch</code>, <code>URL</code>, and <code
+			>Promise</code
+		>. There are no Node.js built-ins (<code>http</code>, <code>net</code>, <code>fs</code>, etc.).
+		This means it works in any environment that supports the Web API:
+	</p>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Runtime</th>
+				<th>Minimum version</th>
+				<th>Notes</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Node.js</td>
+				<td>18.0.0</td>
+				<td>Native <code>fetch</code> available since Node 18</td>
+			</tr>
+			<tr>
+				<td>Bun</td>
+				<td>Any</td>
+				<td>Full Web API support</td>
+			</tr>
+			<tr>
+				<td>Deno</td>
+				<td>Any</td>
+				<td>Full Web API support. Use <code>npm:</code> specifier</td>
+			</tr>
+			<tr>
+				<td>Cloudflare Workers</td>
+				<td>Any</td>
+				<td>See the <a href="/docs/guides/cloudflare-workers">CF Workers guide</a></td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>TypeScript</h2>
+	<p>
+		notifly is written in TypeScript. Types are included in the package — no <code>@types/*</code> package
+		needed.
+	</p>
+
+	<CodeBlock
+		code={`import type {
+  NotiflyMessage,
+  NotiflyResult,
+  NotiflyOptions,
+  ServiceConfig,
+  ServiceDefinition,
+  ParseError,
+  ServiceError,
+} from '@ambersecurityinc/notifly';`}
+		lang="typescript"
+		label="types"
+	/>
+
+	<h2>ESM and CJS</h2>
+	<p>
+		The package ships both ESM (<code>.js</code>) and CommonJS (<code>.cjs</code>) builds with
+		matching type declarations. Your bundler or runtime picks the correct format automatically via
+		the <code>exports</code> field in <code>package.json</code>.
+	</p>
+
+	<CodeBlock
+		code={`// ESM (default — recommended)
+import { notify } from '@ambersecurityinc/notifly';
+
+// CommonJS
+const { notify } = require('@ambersecurityinc/notifly');`}
+		lang="javascript"
+		label="import styles"
+	/>
+
+	<h2>Builder sub-export</h2>
+	<p>
+		The headless URL builder is exported from a separate entry point to keep bundle sizes small when
+		you only need the builder (e.g. in a config UI):
+	</p>
+
+	<CodeBlock
+		code={`import {
+  getServiceSchemas,
+  validateFields,
+  buildUrl,
+  smartParse,
+} from '@ambersecurityinc/notifly/builder';`}
+		lang="typescript"
+		label="builder import"
+	/>
+
+	<h2>Bundle size</h2>
+	<p>
+		The main <code>notify</code> entry point is small — each service adapter is tree-shakeable. The
+		builder sub-export is independent and can be included in UI bundles without pulling in the
+		network dispatch code.
+	</p>
+
+	<blockquote>
+		<p>
+			<strong>Tip:</strong> If you're using Cloudflare Workers, check the
+			<a href="/docs/guides/cloudflare-workers">Cloudflare Workers guide</a> for an example
+			<code>wrangler.toml</code> setup and environment variable handling.
+		</p>
+	</blockquote>
+</DocsLayout>

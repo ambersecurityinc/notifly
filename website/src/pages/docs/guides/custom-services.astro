@@ -1,0 +1,170 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+
+const sendImpl = `async function send(config, message) {
+  const res = await fetch(
+    \`https://api.myapp.com/channels/\${config.channel}/messages\`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': \`Bearer \${config.token}\`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: message.title ?? '',
+        text: message.body,
+        level: message.type ?? 'info',
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const body = await res.text();
+    return {
+      success: false,
+      service: 'myapp',
+      error: \`HTTP \${res.status}: \${body}\`,
+    };
+  }
+
+  return { success: true, service: 'myapp' };
+}`;
+
+const fullExample = `import { registerService, notify } from '@ambersecurityinc/notifly';
+
+registerService({
+  schemas: ['myapp'],
+  parseUrl(url) {
+    return {
+      service: 'myapp',
+      token: url.hostname,
+      channel: url.pathname.slice(1),
+    };
+  },
+  async send(config, message) {
+    const res = await fetch(
+      \`https://api.myapp.com/channels/\${config.channel}/messages\`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: \`Bearer \${config.token}\`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: message.body }),
+      }
+    );
+    return { success: res.ok, service: 'myapp' };
+  },
+});
+
+// Use it like any built-in service
+await notify(
+  { urls: ['myapp://my-api-token/general'] },
+  { title: 'Hello', body: 'Custom service works!' }
+);`;
+
+const multiScheme = `registerService({
+  schemas: ['myapp', 'myapps'],  // myapp:// and myapps://
+  parseUrl(url) {
+    const secure = url.protocol === 'myapps:';
+    return { service: 'myapp', secure, token: url.hostname };
+  },
+  async send(config, message) {
+    const base = config.secure
+      ? 'https://api.myapp.com'
+      : 'http://api.myapp.com';
+    // ...
+  },
+});`;
+---
+
+<DocsLayout
+	title="Custom Services"
+	description="Build and register custom notification service plugins for notifly."
+	section="Guides"
+	prev={{ title: 'Smart Paste', href: '/docs/builder/smart-paste' }}
+	next={{ title: 'Cloudflare Workers', href: '/docs/guides/cloudflare-workers' }}
+>
+	<h1>Custom Services</h1>
+	<p>
+		notifly's plugin system lets you register any HTTP endpoint as a notification service. Once
+		registered, your service works exactly like a built-in service — pass its URL to <code
+			>notify()</code
+		> and it dispatches alongside the others.
+	</p>
+
+	<h2>ServiceDefinition interface</h2>
+	<CodeBlock
+		code={`interface ServiceDefinition {
+  // The URL scheme(s) this service handles, e.g. ['myapp']
+  schemas: string[];
+
+  // Parse a URL object into a config object for send()
+  parseUrl(url: URL): ServiceConfig;
+
+  // Send the notification using the parsed config
+  send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult>;
+}`}
+		lang="typescript"
+	/>
+
+	<h2>Step-by-step example</h2>
+	<p>
+		Let's build a custom service for a fictional API at <code>https://api.myapp.com/notify</code>.
+	</p>
+
+	<h3>1. Define the URL scheme</h3>
+	<p>
+		Choose a URL scheme that doesn't conflict with built-ins. Your notification URLs will look like
+		<code>myapp://TOKEN/CHANNEL</code>.
+	</p>
+
+	<h3>2. Implement parseUrl()</h3>
+	<p>
+		Extract credentials from the URL. The <code>url</code> argument is a standard <code>URL</code> object.
+	</p>
+
+	<CodeBlock
+		code={`function parseUrl(url: URL) {
+  // For myapp://TOKEN/CHANNEL
+  // url.hostname → TOKEN
+  // url.pathname → '/CHANNEL'
+  return {
+    service: 'myapp',
+    token: url.hostname,
+    channel: url.pathname.slice(1), // strip leading /
+  };
+}`}
+		lang="typescript"
+	/>
+
+	<h3>3. Implement send()</h3>
+	<CodeBlock code={sendImpl} lang="typescript" />
+
+	<h3>4. Register and use</h3>
+	<CodeBlock code={fullExample} lang="typescript" label="complete example" />
+
+	<h2>Multiple schemes</h2>
+	<p>
+		A single service definition can handle multiple schemes. This is useful for HTTP/HTTPS variants:
+	</p>
+	<CodeBlock code={multiScheme} lang="typescript" />
+
+	<h2>TypeScript types</h2>
+	<CodeBlock
+		code={`import type {
+  ServiceDefinition,
+  ServiceConfig,
+  NotiflyMessage,
+  NotiflyResult,
+} from '@ambersecurityinc/notifly';`}
+		lang="typescript"
+	/>
+
+	<h2>Sharing custom services</h2>
+	<p>
+		Package your service definition as a standalone npm module and document its URL scheme format.
+		Users install your package and call <code>registerService()</code> at startup.
+	</p>
+</DocsLayout>

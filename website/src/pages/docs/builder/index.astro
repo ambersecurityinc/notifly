@@ -1,0 +1,145 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Builder Overview"
+	description="The notifly headless URL builder — schema-driven URL construction for building your own notification UI."
+	section="Builder"
+	prev={{ title: 'Webhook (Generic)', href: '/docs/services/webhook' }}
+	next={{ title: 'Schemas', href: '/docs/builder/schemas' }}
+>
+	<h1>Builder Overview</h1>
+	<p>
+		The builder is a separate sub-export from <code>@ambersecurityinc/notifly/builder</code> that
+		provides everything you need to build a notification URL configuration UI — without any UI
+		framework dependencies.
+	</p>
+
+	<h2>Why a separate export?</h2>
+	<p>The builder is designed for UI use cases:</p>
+	<ul>
+		<li>A settings page where users configure their notification services</li>
+		<li>A webhook URL converter ("paste your Discord URL and get a notifly URL")</li>
+		<li>A form that validates fields before generating a URL</li>
+	</ul>
+	<p>
+		Keeping it separate means server-side code using only <code>notify()</code> doesn't pay the cost
+		of bundling schema data it doesn't need.
+	</p>
+
+	<h2>Import</h2>
+	<CodeBlock
+		code={`import {
+  // Schema queries
+  getServiceSchemas,
+  getServiceSchema,
+  searchServices,
+  getServicesByCategory,
+  getCategories,
+
+  // Validation
+  validateFields,
+
+  // URL generation
+  buildUrl,
+  decomposeUrl,
+
+  // Smart paste
+  smartParse,
+  detectAndConvert,
+  isRawServiceUrl,
+} from '@ambersecurityinc/notifly/builder';`}
+		lang="typescript"
+		label="all builder exports"
+	/>
+
+	<h2>Typical flow</h2>
+	<CodeBlock
+		code={`import {
+  getServiceSchema,
+  validateFields,
+  buildUrl,
+} from '@ambersecurityinc/notifly/builder';
+
+// 1. Get the schema (fields, labels, help text)
+const schema = getServiceSchema('discord');
+
+// 2. Render a form using schema.fields
+// (your UI framework of choice)
+
+// 3. Validate on submit
+const errors = validateFields('discord', {
+  webhook_id: userInput.webhookId,
+  webhook_token: userInput.webhookToken,
+});
+
+if (errors.length === 0) {
+  // 4. Build the URL
+  const { url, success } = buildUrl('discord', {
+    webhook_id: userInput.webhookId,
+    webhook_token: userInput.webhookToken,
+  });
+  // Store url somewhere — pass it to notify() later
+}`}
+		lang="typescript"
+		label="typical ui flow"
+	/>
+
+	<h2>Builder exports at a glance</h2>
+	<table>
+		<thead>
+			<tr>
+				<th>Export</th>
+				<th>Purpose</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><a href="/docs/builder/schemas"><code>getServiceSchemas()</code></a></td>
+				<td>Get all service schemas</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/schemas"><code>getServiceSchema(service)</code></a></td>
+				<td>Get schema for one service</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/schemas"><code>searchServices(query)</code></a></td>
+				<td>Fuzzy search schemas</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/schemas"><code>getServicesByCategory(cat)</code></a></td>
+				<td>Filter schemas by category</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/schemas"><code>getCategories()</code></a></td>
+				<td>All categories with counts</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/validation"><code>validateFields(service, fields)</code></a></td>
+				<td>Validate field values against schema</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/url-generation"><code>buildUrl(service, fields)</code></a></td>
+				<td>Build a notifly URL from field values</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/url-generation"><code>decomposeUrl(url)</code></a></td>
+				<td>Decompose a URL back into field values</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/smart-paste"><code>smartParse(input)</code></a></td>
+				<td>Parse any URL (raw or notifly format)</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/smart-paste"><code>detectAndConvert(rawUrl)</code></a></td>
+				<td>Convert a raw webhook URL to notifly format</td>
+			</tr>
+			<tr>
+				<td><a href="/docs/builder/smart-paste"><code>isRawServiceUrl(input)</code></a></td>
+				<td>Check if a string is a raw provider URL</td>
+			</tr>
+		</tbody>
+	</table>
+</DocsLayout>
