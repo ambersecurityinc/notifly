@@ -1,7 +1,7 @@
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { ServiceError } from '../errors.js';
 import { BaseService } from './base.js';
-import { sanitizeHeaderValue } from '../security.js';
+import { sanitizeHeaderValue, validateHost, DEFAULT_TIMEOUT_MS, errorMessage } from '../security.js';
 
 interface NtfyConfig extends ServiceConfig {
   service: 'ntfy';
@@ -36,7 +36,11 @@ class NtfyService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'ntfy') {
+      throw new Error('Misrouted config: expected ntfy');
+    }
     const { host, topic } = config as NtfyConfig;
+
     const headers: Record<string, string> = { 'Content-Type': 'text/plain' };
     if (message.title) headers['Title'] = sanitizeHeaderValue(message.title);
     if (message.type) {
@@ -44,10 +48,13 @@ class NtfyService extends BaseService implements ServiceDefinition {
       headers['Tags'] = TAGS_MAP[message.type] ?? '';
     }
     try {
+      // H5: SSRF validation — inside try so errors return as result, not throw
+      validateHost(host);
       const response = await fetch(`https://${host}/${topic}`, {
         method: 'POST',
         headers,
         body: message.body,
+        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
       });
       if (!response.ok) {
         const text = await response.text().catch(() => '');
@@ -55,7 +62,7 @@ class NtfyService extends BaseService implements ServiceDefinition {
       }
       return { success: true, service: 'ntfy' };
     } catch (err) {
-      return { success: false, service: 'ntfy', error: (err as Error).message };
+      return { success: false, service: 'ntfy', error: errorMessage(err) };
     }
   }
 }

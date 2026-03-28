@@ -105,6 +105,11 @@ function isBlockedIPv4(ip: string): boolean {
 
 /**
  * Blocked IPv6 addresses (exact match after normalisation).
+ *
+ * The fe80::/10 check uses /^fe[89ab]/i which correctly covers the fe80–febf
+ * range (all addresses where the first 10 bits are 1111 1110 10). This is the
+ * full fe80::/10 link-local prefix per RFC 4291 §2.5.6 and is acceptable for
+ * practical SSRF prevention.
  */
 function isBlockedIPv6(ip: string): boolean {
   const stripped = ip.replace(/^\[|\]$/g, '');
@@ -112,7 +117,7 @@ function isBlockedIPv6(ip: string): boolean {
   if (stripped === '::1' || stripped === '0000:0000:0000:0000:0000:0000:0000:0001') return true;
   // :: (unspecified)
   if (stripped === '::' || stripped === '0000:0000:0000:0000:0000:0000:0000:0000') return true;
-  // fe80::/10 (link-local)
+  // fe80::/10 (link-local) — covers fe80 through febf (see JSDoc above)
   if (/^fe[89ab]/i.test(stripped)) return true;
   // IPv4-mapped IPv6 (::ffff:x.x.x.x)
   const v4mapped = stripped.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
@@ -124,6 +129,11 @@ function isBlockedIPv6(ip: string): boolean {
  * Validate that a hostname is safe for outbound requests.
  * Blocks loopback, private, link-local, and unspecified addresses.
  * Throws a descriptive error (without echoing the raw hostname) on violation.
+ *
+ * **DNS rebinding limitation:** This check validates the URL hostname as a
+ * string. A hostname that resolves to a private IP at connect-time bypasses
+ * this check. For high-security deployments, resolve the hostname first and
+ * validate the resulting IP, or use a connect-time firewall rule.
  */
 export function validateHost(hostname: string): void {
   const lower = hostname.toLowerCase();
@@ -150,4 +160,56 @@ export function validateHost(hostname: string): void {
  */
 export function escapeTelegramMarkdownV2(text: string): string {
   return text.replace(/[_*\[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+}
+
+/**
+ * Escape HTML entities for Telegram HTML parse mode.
+ * Even in opt-in HTML mode, user content must be entity-escaped to prevent injection.
+ */
+export function escapeTelegramHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Default request timeout in milliseconds. */
+export const DEFAULT_TIMEOUT_MS = 30_000;
+
+/**
+ * Truncate a string to a maximum length, appending "…" if truncated.
+ */
+export function truncate(str: string, max: number): string {
+  if (str.length <= max) return str;
+  return str.slice(0, max - 1) + '\u2026';
+}
+
+/** Max title length in characters. */
+export const MAX_TITLE_LENGTH = 256;
+
+/** Max body length in characters (~64 KB). */
+export const MAX_BODY_LENGTH = 65_536;
+
+/**
+ * Enforce message size limits. Truncates title and body in-place.
+ */
+export function enforceMessageLimits(message: { title?: string; body: string }): { title?: string; body: string } {
+  return {
+    title: message.title !== undefined ? truncate(message.title, MAX_TITLE_LENGTH) : undefined,
+    body: truncate(message.body, MAX_BODY_LENGTH),
+  };
+}
+
+/**
+ * Validate a basic email address format.
+ * Throws if the address does not match a minimal RFC 5322 pattern.
+ */
+export function validateEmail(address: string): void {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+    throw new Error('Invalid email address format');
+  }
+}
+
+/**
+ * Safely extract an error message from an unknown thrown value.
+ */
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

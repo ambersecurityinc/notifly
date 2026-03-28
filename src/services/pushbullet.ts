@@ -13,6 +13,7 @@
  */
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
+import { errorMessage } from '../security.js';
 
 interface PushbulletConfig extends ServiceConfig {
   service: 'pushbullet';
@@ -42,6 +43,9 @@ class PushbulletService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'pushbullet') {
+      throw new Error('Misrouted config: expected pushbullet');
+    }
     const { accessToken, deviceIden, channelTag } = config as PushbulletConfig;
 
     const body: Record<string, unknown> = {
@@ -58,7 +62,7 @@ class PushbulletService extends BaseService implements ServiceDefinition {
       });
       return { success: true, service: 'pushbullet' };
     } catch (err) {
-      return { success: false, service: 'pushbullet', error: (err as Error).message };
+      return { success: false, service: 'pushbullet', error: errorMessage(err) };
     }
   }
 }

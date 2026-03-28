@@ -1,5 +1,6 @@
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
+import { errorMessage } from '../security.js';
 
 interface SlackConfig extends ServiceConfig {
   service: 'slack';
@@ -22,6 +23,9 @@ class SlackService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'slack') {
+      throw new Error('Misrouted config: expected slack');
+    }
     const { tokenA, tokenB, tokenC, channel } = config as SlackConfig;
     const text = message.title ? `*${message.title}*\n${message.body}` : message.body;
     const body: Record<string, unknown> = { text };
@@ -33,7 +37,7 @@ class SlackService extends BaseService implements ServiceDefinition {
       );
       return { success: true, service: 'slack' };
     } catch (err) {
-      return { success: false, service: 'slack', error: (err as Error).message };
+      return { success: false, service: 'slack', error: errorMessage(err) };
     }
   }
 }

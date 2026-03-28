@@ -2,10 +2,10 @@
  * Generic webhook service with JSON and form-encoded variants.
  *
  * URL schemes:
- *   json://host/path   — HTTP POST with JSON body
  *   jsons://host/path  — HTTPS POST with JSON body
- *   form://host/path   — HTTP POST with application/x-www-form-urlencoded body
  *   forms://host/path  — HTTPS POST with form-encoded body
+ *
+ * Insecure (non-TLS) schemes json:// and form:// are rejected.
  *
  * Default JSON body: { "title": "...", "body": "...", "type": "..." }
  *
@@ -15,14 +15,20 @@
  *   ?method=PUT         — override the HTTP method (default: POST)
  *
  * Examples:
- *   json://example.com/webhook
- *   jsons://example.com/api/notify?+Authorization=Bearer+token&-source=myapp
+ *   jsons://example.com/api/notify?+X-Custom=value&-source=myapp
  *   forms://hooks.example.com/notify?method=PUT
  */
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { ServiceError } from '../errors.js';
 import { BaseService } from './base.js';
-import { validateHost, validateHeaderName, sanitizeHeaderValue, validateHttpMethod } from '../security.js';
+import {
+  validateHost,
+  validateHeaderName,
+  sanitizeHeaderValue,
+  validateHttpMethod,
+  DEFAULT_TIMEOUT_MS,
+  errorMessage,
+} from '../security.js';
 
 interface WebhookConfig extends ServiceConfig {
   service: 'webhook';
@@ -67,10 +73,21 @@ class WebhookService extends BaseService implements ServiceDefinition {
         if (eqIdx === -1) continue;
         const rawKey = part.slice(0, eqIdx);
         const rawVal = part.slice(eqIdx + 1);
-        // Decode key preserving literal '+' (don't treat it as space)
-        const key = decodeURIComponent(rawKey);
-        // Decode value with standard form-encoding ('+' = space)
-        const value = decodeURIComponent(rawVal.replace(/\+/g, ' '));
+
+        // L6: Wrap decodeURIComponent in try/catch for malformed percent-encoding
+        let key: string;
+        let value: string;
+        try {
+          key = decodeURIComponent(rawKey);
+        } catch {
+          throw new Error('Malformed percent-encoding in URL parameter key');
+        }
+        try {
+          value = decodeURIComponent(rawVal.replace(/\+/g, ' '));
+        } catch {
+          throw new Error('Malformed percent-encoding in URL parameter value');
+        }
+
         if (key === 'method') {
           // H4: Restrict to allowed HTTP methods
           method = validateHttpMethod(value);
@@ -89,15 +106,19 @@ class WebhookService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'webhook') {
+      throw new Error('Misrouted config: expected webhook');
+    }
     const { targetUrl, isJson, method, extraHeaders, extraFields } = config as WebhookConfig;
 
     try {
+      // M8: Base fields take precedence — spread extraFields first so base wins
       const baseFields: Record<string, string> = {
         title: message.title ?? '',
         body: message.body,
         type: message.type ?? 'info',
       };
-      const fields = { ...baseFields, ...extraFields };
+      const fields = { ...extraFields, ...baseFields };
 
       let body: string;
       let contentType: string;
@@ -112,15 +133,21 @@ class WebhookService extends BaseService implements ServiceDefinition {
 
       const headers: Record<string, string> = { 'Content-Type': contentType, ...extraHeaders };
 
-      const response = await fetch(targetUrl, { method, headers, body });
+      // M1: Add timeout to fetch
+      const response = await fetch(targetUrl, {
+        method,
+        headers,
+        body,
+        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+      });
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        throw new ServiceError(`HTTP ${response.status} from ${targetUrl}`, response.status, text.slice(0, 200));
+        throw new ServiceError(`HTTP ${response.status}`, response.status, text.slice(0, 200));
       }
 
       return { success: true, service: 'webhook' };
     } catch (err) {
-      return { success: false, service: 'webhook', error: (err as Error).message };
+      return { success: false, service: 'webhook', error: errorMessage(err) };
     }
   }
 }

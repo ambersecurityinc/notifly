@@ -16,6 +16,7 @@
  */
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
+import { errorMessage } from '../security.js';
 
 interface MSTeamsConfig extends ServiceConfig {
   service: 'msteams';
@@ -40,6 +41,9 @@ class MSTeamsService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'msteams') {
+      throw new Error('Misrouted config: expected msteams');
+    }
     const { groupId, tenantId, channelId, webhookId } = config as MSTeamsConfig;
 
     const webhookUrl = tenantId
@@ -54,7 +58,7 @@ class MSTeamsService extends BaseService implements ServiceDefinition {
       await this.httpPost(webhookUrl, { text });
       return { success: true, service: 'msteams' };
     } catch (err) {
-      return { success: false, service: 'msteams', error: (err as Error).message };
+      return { success: false, service: 'msteams', error: errorMessage(err) };
     }
   }
 }

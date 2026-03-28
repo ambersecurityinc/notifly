@@ -121,5 +121,51 @@ describe('Email service', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('500');
     });
+
+    // M4: Email validation
+    it('rejects invalid "to" address', async () => {
+      const result = await emailService.send(
+        { service: 'email', user: 'u', password: 'p', host: 'host', port: '', to: 'not-an-email', gateway: 'mailchannels' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/Invalid email/);
+    });
+
+    it('rejects address with double @', async () => {
+      const result = await emailService.send(
+        { service: 'email', user: 'u', password: 'p', host: 'host', port: '', to: 'a@@b.com', gateway: 'mailchannels' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/Invalid email/);
+    });
+
+    it('rejects address with spaces', async () => {
+      const result = await emailService.send(
+        { service: 'email', user: 'u', password: 'p', host: 'host', port: '', to: 'a b@c.com', gateway: 'mailchannels' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/Invalid email/);
+    });
+
+    it('accepts valid email addresses', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await emailService.send(
+        { service: 'email', user: 'u', password: 'p', host: 'host', port: '', to: 'valid@example.com', gateway: 'mailchannels' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(true);
+    });
+
+    // M6: Config guard
+    it('throws on misrouted config', async () => {
+      await expect(
+        emailService.send({ service: 'discord', webhookId: 'x', webhookToken: 'y' }, { body: 'test' }),
+      ).rejects.toThrow('Misrouted config: expected email');
+    });
   });
 });

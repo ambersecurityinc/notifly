@@ -1,6 +1,6 @@
 {
   "name": "@ambersecurityinc/notifly",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Send notifications to multiple services from a single API using Apprise-compatible URLs",
   "type": "module",
   "main": "./dist/index.cjs",

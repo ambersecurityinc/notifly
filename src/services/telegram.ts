@@ -1,6 +1,6 @@
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
-import { escapeTelegramMarkdownV2 } from '../security.js';
+import { escapeTelegramMarkdownV2, escapeTelegramHtml, errorMessage } from '../security.js';
 
 interface TelegramConfig extends ServiceConfig {
   service: 'telegram';
@@ -20,11 +20,18 @@ class TelegramService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'telegram') {
+      throw new Error('Misrouted config: expected telegram');
+    }
     const { botToken, chatId, parseMode } = config as TelegramConfig;
     const useHtml = parseMode === 'HTML';
     let text: string;
     if (useHtml) {
-      text = message.title ? `<b>${message.title}</b>\n${message.body}` : message.body;
+      // H7: Escape HTML entities even in opt-in HTML mode
+      const safeBody = escapeTelegramHtml(message.body);
+      text = message.title
+        ? `<b>${escapeTelegramHtml(message.title)}</b>\n${safeBody}`
+        : safeBody;
     } else {
       const escapedBody = escapeTelegramMarkdownV2(message.body);
       text = message.title
@@ -38,7 +45,7 @@ class TelegramService extends BaseService implements ServiceDefinition {
       );
       return { success: true, service: 'telegram' };
     } catch (err) {
-      return { success: false, service: 'telegram', error: (err as Error).message };
+      return { success: false, service: 'telegram', error: errorMessage(err) };
     }
   }
 }

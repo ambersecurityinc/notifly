@@ -56,9 +56,7 @@ describe('Telegram service', () => {
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      // title should be bold-wrapped with escaped chars
       expect(body.text).toContain('*Alert\\!*');
-      // body should have escaped brackets, parens, dots
       expect(body.text).toContain('Check \\[this\\]\\(link\\)\\.');
       expect(body.parse_mode).toBe('MarkdownV2');
     });
@@ -74,6 +72,27 @@ describe('Telegram service', () => {
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.text).toMatch(/^\*Alert\*\nBody text$/);
+    });
+
+    // H7: HTML entities escaped even in opt-in HTML mode
+    it('escapes HTML entities in opt-in HTML mode', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await telegramService.send(
+        { service: 'telegram', botToken: 'bot', chatId: 'chat', parseMode: 'HTML' },
+        { title: 'A & B', body: '<script>alert(1)</script> test > 0' },
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.parse_mode).toBe('HTML');
+      // Title should be entity-escaped inside <b>
+      expect(body.text).toContain('<b>A &amp; B</b>');
+      // Body should be entity-escaped
+      expect(body.text).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(body.text).toContain('test &gt; 0');
+      // Should NOT contain raw HTML
+      expect(body.text).not.toContain('<script>');
     });
 
     it('uses HTML parse_mode when explicitly opted in', async () => {
@@ -97,6 +116,13 @@ describe('Telegram service', () => {
         { body: 'Test' },
       );
       expect(result.success).toBe(false);
+    });
+
+    // M6: Config guard
+    it('throws on misrouted config', async () => {
+      await expect(
+        telegramService.send({ service: 'discord', webhookId: 'x', webhookToken: 'y' }, { body: 'test' }),
+      ).rejects.toThrow('Misrouted config: expected telegram');
     });
   });
 });

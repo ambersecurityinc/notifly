@@ -136,6 +136,20 @@ describe('Webhook service', () => {
       const url = new URL('jsons://example.com/hook?method=CONNECT');
       expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
     });
+
+    // --- L6: Malformed percent-encoding ---
+    it('throws descriptive error for malformed percent-encoding in key', () => {
+      const url = new URL('jsons://example.com/hook');
+      // Manually set a bad search string
+      Object.defineProperty(url, 'search', { value: '?%ZZ=value' });
+      expect(() => webhookService.parseUrl(url)).toThrow(/Malformed percent-encoding/);
+    });
+
+    it('throws descriptive error for malformed percent-encoding in value', () => {
+      const url = new URL('jsons://example.com/hook');
+      Object.defineProperty(url, 'search', { value: '?key=%ZZ' });
+      expect(() => webhookService.parseUrl(url)).toThrow(/Malformed percent-encoding/);
+    });
   });
 
   describe('send', () => {
@@ -221,6 +235,55 @@ describe('Webhook service', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('404');
+    });
+
+    // H2: Error message must not contain URL
+    it('does not leak URL in error messages on HTTP failure', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => 'err' }));
+
+      const result = await webhookService.send(
+        { service: 'webhook', targetUrl: 'https://secret.example.com/path?key=abc', isJson: true, method: 'POST', extraHeaders: {}, extraFields: {} },
+        { body: 'Test' },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).not.toContain('secret.example.com');
+      expect(result.error).not.toContain('key=abc');
+    });
+
+    // M1: fetch has AbortSignal.timeout
+    it('passes AbortSignal.timeout to fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await webhookService.send(
+        { service: 'webhook', targetUrl: 'https://example.com/hook', isJson: true, method: 'POST', extraHeaders: {}, extraFields: {} },
+        { body: 'Hi' },
+      );
+
+      const init = mockFetch.mock.calls[0][1];
+      expect(init.signal).toBeDefined();
+    });
+
+    // M6: Config guard
+    it('throws on misrouted config', async () => {
+      await expect(
+        webhookService.send({ service: 'discord', webhookId: 'x', webhookToken: 'y' }, { body: 'test' }),
+      ).rejects.toThrow('Misrouted config: expected webhook');
+    });
+
+    // M8: Base fields take precedence over extraFields
+    it('does not allow extraFields to override message body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await webhookService.send(
+        { service: 'webhook', targetUrl: 'https://example.com/hook', isJson: true, method: 'POST', extraHeaders: {}, extraFields: { body: 'injected' } },
+        { body: 'real message' },
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.body).toBe('real message');
     });
   });
 });
