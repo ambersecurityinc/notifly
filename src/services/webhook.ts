@@ -22,6 +22,7 @@
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { ServiceError } from '../errors.js';
 import { BaseService } from './base.js';
+import { validateHost, validateHeaderName, sanitizeHeaderValue, validateHttpMethod } from '../security.js';
 
 interface WebhookConfig extends ServiceConfig {
   service: 'webhook';
@@ -39,8 +40,19 @@ class WebhookService extends BaseService implements ServiceDefinition {
     const scheme = url.protocol.replace(/:$/, '');
     const isSecure = scheme === 'jsons' || scheme === 'forms';
     const isJson = scheme === 'json' || scheme === 'jsons';
-    const httpScheme = isSecure ? 'https' : 'http';
+
+    // C1: Block insecure (non-TLS) schemes
+    if (!isSecure) {
+      throw new Error(
+        `Insecure scheme "${scheme}://" is not allowed. Use "${scheme}s://" (HTTPS) instead`,
+      );
+    }
+
+    const httpScheme = 'https';
     const targetUrl = `${httpScheme}://${url.hostname}${url.pathname}`;
+
+    // C1: Validate host against SSRF deny-list
+    validateHost(url.hostname);
 
     let method = 'POST';
     const extraHeaders: Record<string, string> = {};
@@ -60,9 +72,13 @@ class WebhookService extends BaseService implements ServiceDefinition {
         // Decode value with standard form-encoding ('+' = space)
         const value = decodeURIComponent(rawVal.replace(/\+/g, ' '));
         if (key === 'method') {
-          method = value.toUpperCase();
+          // H4: Restrict to allowed HTTP methods
+          method = validateHttpMethod(value);
         } else if (key.startsWith('+')) {
-          extraHeaders[key.slice(1)] = value;
+          // C2: Validate header name against block-list
+          const headerName = key.slice(1);
+          validateHeaderName(headerName);
+          extraHeaders[headerName] = sanitizeHeaderValue(value);
         } else if (key.startsWith('-')) {
           extraFields[key.slice(1)] = value;
         }

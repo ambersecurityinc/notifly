@@ -72,5 +72,61 @@ describe('ntfy service', () => {
       );
       expect(result.success).toBe(false);
     });
+
+    // --- C3: CRLF injection ---
+    it('sanitizes CRLF in title header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: 'Injected\r\nX-Evil: value', body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toBe('Injected X-Evil: value');
+      expect(headers['Title']).not.toContain('\r');
+      expect(headers['Title']).not.toContain('\n');
+    });
+
+    it('sanitizes lone \\n in title header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: 'Line1\nLine2', body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toBe('Line1 Line2');
+    });
+
+    it('passes clean titles through unchanged', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: 'Normal Title', body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toBe('Normal Title');
+    });
+
+    it('truncates title at 255 chars', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const longTitle = 'A'.repeat(300);
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: longTitle, body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toHaveLength(255);
+    });
   });
 });

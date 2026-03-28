@@ -1,6 +1,7 @@
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { ServiceError } from '../errors.js';
 import { BaseService } from './base.js';
+import { sanitizeHeaderValue } from '../security.js';
 
 interface NtfyConfig extends ServiceConfig {
   service: 'ntfy';
@@ -37,7 +38,7 @@ class NtfyService extends BaseService implements ServiceDefinition {
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
     const { host, topic } = config as NtfyConfig;
     const headers: Record<string, string> = { 'Content-Type': 'text/plain' };
-    if (message.title) headers['Title'] = message.title;
+    if (message.title) headers['Title'] = sanitizeHeaderValue(message.title);
     if (message.type) {
       headers['Priority'] = PRIORITY_MAP[message.type] ?? '3';
       headers['Tags'] = TAGS_MAP[message.type] ?? '';

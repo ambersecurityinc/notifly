@@ -15,7 +15,7 @@ describe('Gotify service', () => {
   });
 
   describe('send', () => {
-    it('posts message to gotify API', async () => {
+    it('posts message to gotify API with token in header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: true });
       vi.stubGlobal('fetch', mockFetch);
 
@@ -25,13 +25,17 @@ describe('Gotify service', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://myserver.com/message?token=abc123',
-        expect.objectContaining({ method: 'POST' }),
-      );
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.title).toBe('Hello');
-      expect(body.message).toBe('World');
+      const [url, init] = mockFetch.mock.calls[0];
+      // C4: Token must NOT be in the URL
+      expect(url).toBe('https://myserver.com/message');
+      expect(url).not.toContain('token=');
+      expect(url).not.toContain('abc123');
+      // C4: Token must be in X-Gotify-Key header
+      const headers = JSON.parse(init.body);
+      const requestHeaders = init.headers;
+      expect(requestHeaders['X-Gotify-Key']).toBe('abc123');
+      expect(headers.title).toBe('Hello');
+      expect(headers.message).toBe('World');
     });
 
     it('sets higher priority for failure type', async () => {
@@ -54,6 +58,17 @@ describe('Gotify service', () => {
         { body: 'Test' },
       );
       expect(result.success).toBe(false);
+    });
+
+    it('does not expose token in error messages', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' }));
+      const result = await gotifyService.send(
+        { service: 'gotify', host: 'server.com', token: 'supersecrettoken' },
+        { body: 'Test' },
+      );
+      expect(result.success).toBe(false);
+      // The error message should not contain the token
+      expect(result.error).not.toContain('supersecrettoken');
     });
   });
 });

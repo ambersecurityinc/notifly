@@ -28,8 +28,9 @@ class GotifyService extends BaseService implements ServiceDefinition {
     const priority = message.type ? (PRIORITY_MAP[message.type] ?? 2) : 2;
     try {
       await this.httpPost(
-        `https://${host}/message?token=${token}`,
+        `https://${host}/message`,
         { title: message.title ?? '', message: message.body, priority },
+        { 'X-Gotify-Key': token },
       );
       return { success: true, service: 'gotify' };
     } catch (err) {

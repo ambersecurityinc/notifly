@@ -7,29 +7,10 @@ afterEach(() => {
 
 describe('Webhook service', () => {
   describe('parseUrl', () => {
-    it('parses json:// as HTTP JSON endpoint', () => {
-      const url = new URL('json://example.com/notify');
-      const config = webhookService.parseUrl(url);
-      expect(config).toMatchObject({
-        service: 'webhook',
-        targetUrl: 'http://example.com/notify',
-        isJson: true,
-        method: 'POST',
-        extraHeaders: {},
-        extraFields: {},
-      });
-    });
-
     it('parses jsons:// as HTTPS JSON endpoint', () => {
       const url = new URL('jsons://example.com/notify');
       const config = webhookService.parseUrl(url);
       expect(config).toMatchObject({ targetUrl: 'https://example.com/notify', isJson: true });
-    });
-
-    it('parses form:// as HTTP form-encoded endpoint', () => {
-      const url = new URL('form://example.com/hook');
-      const config = webhookService.parseUrl(url);
-      expect(config).toMatchObject({ targetUrl: 'http://example.com/hook', isJson: false });
     });
 
     it('parses forms:// as HTTPS form-encoded endpoint', () => {
@@ -39,9 +20,9 @@ describe('Webhook service', () => {
     });
 
     it('extracts custom headers from + prefixed params', () => {
-      const url = new URL('jsons://example.com/hook?+Authorization=Bearer+abc&+X-Custom=value');
+      const url = new URL('jsons://example.com/hook?+X-Custom=value&+X-Other=test');
       const config = webhookService.parseUrl(url);
-      expect(config.extraHeaders).toEqual({ Authorization: 'Bearer abc', 'X-Custom': 'value' });
+      expect(config.extraHeaders).toEqual({ 'X-Custom': 'value', 'X-Other': 'test' });
     });
 
     it('extracts extra body fields from - prefixed params', () => {
@@ -58,6 +39,102 @@ describe('Webhook service', () => {
 
     it('registers all four schemes', () => {
       expect(webhookService.schemas).toEqual(expect.arrayContaining(['json', 'jsons', 'form', 'forms']));
+    });
+
+    // --- C1: SSRF protection ---
+    it('blocks json:// (insecure scheme)', () => {
+      const url = new URL('json://example.com/notify');
+      expect(() => webhookService.parseUrl(url)).toThrow(/Insecure scheme/);
+    });
+
+    it('blocks form:// (insecure scheme)', () => {
+      const url = new URL('form://example.com/hook');
+      expect(() => webhookService.parseUrl(url)).toThrow(/Insecure scheme/);
+    });
+
+    it('blocks 127.0.0.1 (loopback)', () => {
+      const url = new URL('jsons://127.0.0.1/hook');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('blocks 0.0.0.0', () => {
+      const url = new URL('jsons://0.0.0.0/hook');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('blocks 169.254.169.254 (cloud metadata)', () => {
+      const url = new URL('jsons://169.254.169.254/latest/meta-data');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('blocks 10.0.0.1 (RFC1918)', () => {
+      const url = new URL('jsons://10.0.0.1/hook');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('blocks 192.168.1.1 (RFC1918)', () => {
+      const url = new URL('jsons://192.168.1.1/hook');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('blocks ::1 (IPv6 loopback)', () => {
+      const url = new URL('jsons://[::1]/hook');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('SSRF error does not contain the raw URL', () => {
+      try {
+        const url = new URL('jsons://10.0.0.1/secret-path?token=abc');
+        webhookService.parseUrl(url);
+      } catch (err) {
+        const msg = (err as Error).message;
+        expect(msg).not.toContain('10.0.0.1');
+        expect(msg).not.toContain('secret-path');
+        expect(msg).not.toContain('token=abc');
+      }
+    });
+
+    it('allows legitimate HTTPS public hosts', () => {
+      const url = new URL('jsons://example.com/webhook');
+      expect(() => webhookService.parseUrl(url)).not.toThrow();
+    });
+
+    // --- C2: Header injection ---
+    it('rejects Host header override via + params', () => {
+      const url = new URL('jsons://example.com/hook?+Host=evil.com');
+      expect(() => webhookService.parseUrl(url)).toThrow(/Blocked header/);
+    });
+
+    it('rejects Authorization header override via + params', () => {
+      const url = new URL('jsons://example.com/hook?+Authorization=Bearer+token');
+      expect(() => webhookService.parseUrl(url)).toThrow(/Blocked header/);
+    });
+
+    it('rejects Cookie header override via + params', () => {
+      const url = new URL('jsons://example.com/hook?+Cookie=session=abc');
+      expect(() => webhookService.parseUrl(url)).toThrow(/Blocked header/);
+    });
+
+    it('rejects header names with special characters', () => {
+      const url = new URL('jsons://example.com/hook?+X%20Bad=val');
+      expect(() => webhookService.parseUrl(url)).toThrow(/disallowed characters/);
+    });
+
+    it('allows legitimate custom headers', () => {
+      const url = new URL('jsons://example.com/hook?+X-Custom=value');
+      const config = webhookService.parseUrl(url);
+      expect(config.extraHeaders['X-Custom']).toBe('value');
+    });
+
+    // --- H4: Method restriction ---
+    it('rejects DELETE method', () => {
+      const url = new URL('jsons://example.com/hook?method=DELETE');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
+    });
+
+    it('rejects CONNECT method', () => {
+      const url = new URL('jsons://example.com/hook?method=CONNECT');
+      expect(() => webhookService.parseUrl(url)).toThrow(/not allowed/);
     });
   });
 
@@ -100,12 +177,12 @@ describe('Webhook service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await webhookService.send(
-        { service: 'webhook', targetUrl: 'https://example.com/hook', isJson: true, method: 'POST', extraHeaders: { Authorization: 'Bearer xyz' }, extraFields: {} },
+        { service: 'webhook', targetUrl: 'https://example.com/hook', isJson: true, method: 'POST', extraHeaders: { 'X-Custom': 'xyz' }, extraFields: {} },
         { body: 'Hi' },
       );
 
       const [, init] = mockFetch.mock.calls[0];
-      expect(init.headers['Authorization']).toBe('Bearer xyz');
+      expect(init.headers['X-Custom']).toBe('xyz');
     });
 
     it('merges extra fields into JSON body', async () => {
