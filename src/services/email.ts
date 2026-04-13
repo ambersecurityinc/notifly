@@ -14,9 +14,17 @@
  *
  * For generic SMTP URLs without a gateway param, this service throws a clear
  * error explaining the limitation and suggesting a gateway.
+ *
+ * **Security note (M3):** The Resend API key is passed as the URL password
+ * field (mailto://user:APIKEY@host). URLs may appear in shell history,
+ * process listings (`ps`), and server logs. For production use, construct the
+ * URL programmatically from environment variables rather than hard-coding keys:
+ *
+ *   const url = `mailto://user:${process.env.RESEND_KEY}@host/?to=...&gateway=resend`;
  */
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
+import { validateEmail, errorMessage } from '../security.js';
 
 interface EmailConfig extends ServiceConfig {
   service: 'email';
@@ -34,6 +42,12 @@ interface EmailConfig extends ServiceConfig {
 class EmailService extends BaseService implements ServiceDefinition {
   schemas = ['mailto'];
 
+  /**
+   * Parse a mailto:// URL into an EmailConfig.
+   *
+   * **Security note:** API keys in the password field of URLs appear in shell
+   * history and process listings. See module-level JSDoc for guidance.
+   */
   parseUrl(url: URL): EmailConfig {
     const user = decodeURIComponent(url.username);
     const password = decodeURIComponent(url.password);
@@ -48,6 +62,9 @@ class EmailService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'email') {
+      throw new Error('Misrouted config: expected email');
+    }
     const { user, password, host, to, from, cc, bcc, gateway } = config as EmailConfig;
 
     try {
@@ -58,6 +75,12 @@ class EmailService extends BaseService implements ServiceDefinition {
           'or ?gateway=resend (free tier available) to your mailto:// URL.',
         );
       }
+
+      // M4: Validate email addresses before sending
+      validateEmail(to);
+      if (from) validateEmail(from);
+      if (cc) validateEmail(cc);
+      if (bcc) validateEmail(bcc);
 
       const subject = message.title ?? '';
       const text = message.body;
@@ -89,7 +112,7 @@ class EmailService extends BaseService implements ServiceDefinition {
 
       return { success: true, service: 'email' };
     } catch (err) {
-      return { success: false, service: 'email', error: (err as Error).message };
+      return { success: false, service: 'email', error: errorMessage(err) };
     }
   }
 }

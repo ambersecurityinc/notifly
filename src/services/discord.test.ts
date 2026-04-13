@@ -56,5 +56,26 @@ describe('Discord service', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('401');
     });
+
+    // H1: Timeout via httpPost
+    it('passes AbortSignal.timeout to fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await discordService.send(
+        { service: 'discord', webhookId: 'wid', webhookToken: 'wtoken' },
+        { body: 'test' },
+      );
+
+      const init = mockFetch.mock.calls[0][1];
+      expect(init.signal).toBeDefined();
+    });
+
+    // M6: Config guard
+    it('throws on misrouted config', async () => {
+      await expect(
+        discordService.send({ service: 'slack', tokenA: 'a', tokenB: 'b', tokenC: 'c' }, { body: 'test' }),
+      ).rejects.toThrow('Misrouted config: expected discord');
+    });
   });
 });

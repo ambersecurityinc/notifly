@@ -40,4 +40,14 @@ describe('parseUrl', () => {
   it('throws ParseError for unknown scheme', () => {
     expect(() => parseUrl('unknown://something')).toThrow(ParseError);
   });
+
+  // M5: Error does not echo raw URL input
+  it('does not echo raw URL in ParseError message', () => {
+    try {
+      parseUrl('not-a-url-with-secret-token');
+    } catch (err) {
+      expect((err as Error).message).toBe('Invalid URL format');
+      expect((err as Error).message).not.toContain('secret');
+    }
+  });
 });

@@ -1,5 +1,6 @@
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
+import { errorMessage } from '../security.js';
 
 interface DiscordConfig extends ServiceConfig {
   service: 'discord';
@@ -17,6 +18,9 @@ class DiscordService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'discord') {
+      throw new Error('Misrouted config: expected discord');
+    }
     const { webhookId, webhookToken } = config as DiscordConfig;
     const content = message.title ? `**${message.title}**\n${message.body}` : message.body;
     try {
@@ -26,7 +30,7 @@ class DiscordService extends BaseService implements ServiceDefinition {
       );
       return { success: true, service: 'discord' };
     } catch (err) {
-      return { success: false, service: 'discord', error: (err as Error).message };
+      return { success: false, service: 'discord', error: errorMessage(err) };
     }
   }
 }

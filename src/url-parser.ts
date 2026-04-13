@@ -7,7 +7,7 @@ export function parseUrl(urlString: string): ServiceConfig {
   try {
     url = new URL(urlString);
   } catch {
-    throw new ParseError(`Invalid URL: ${urlString}`);
+    throw new ParseError('Invalid URL format');
   }
 
   const schema = url.protocol.replace(/:$/, '');

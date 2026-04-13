@@ -59,5 +59,12 @@ describe('Slack service', () => {
       );
       expect(result.success).toBe(false);
     });
+
+    // M6: Config guard
+    it('throws on misrouted config', async () => {
+      await expect(
+        slackService.send({ service: 'discord', webhookId: 'x', webhookToken: 'y' }, { body: 'test' }),
+      ).rejects.toThrow('Misrouted config: expected slack');
+    });
   });
 });

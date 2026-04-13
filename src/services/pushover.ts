@@ -15,6 +15,7 @@
  */
 import type { NotiflyMessage, NotiflyResult, ServiceConfig, ServiceDefinition } from '../types.js';
 import { BaseService } from './base.js';
+import { errorMessage } from '../security.js';
 
 interface PushoverConfig extends ServiceConfig {
   service: 'pushover';
@@ -42,6 +43,9 @@ class PushoverService extends BaseService implements ServiceDefinition {
   }
 
   async send(config: ServiceConfig, message: NotiflyMessage): Promise<NotiflyResult> {
+    if (config.service !== 'pushover') {
+      throw new Error('Misrouted config: expected pushover');
+    }
     const { userKey, apiToken, device } = config as PushoverConfig;
     const priority = message.type !== undefined ? (PRIORITY_MAP[message.type] ?? 0) : 0;
 
@@ -58,7 +62,7 @@ class PushoverService extends BaseService implements ServiceDefinition {
       await this.httpPost('https://api.pushover.net/1/messages.json', body);
       return { success: true, service: 'pushover' };
     } catch (err) {
-      return { success: false, service: 'pushover', error: (err as Error).message };
+      return { success: false, service: 'pushover', error: errorMessage(err) };
     }
   }
 }

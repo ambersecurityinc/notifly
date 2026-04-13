@@ -72,5 +72,150 @@ describe('ntfy service', () => {
       );
       expect(result.success).toBe(false);
     });
+
+    // --- C3: CRLF injection ---
+    it('sanitizes CRLF in title header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: 'Injected\r\nX-Evil: value', body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toBe('Injected X-Evil: value');
+      expect(headers['Title']).not.toContain('\r');
+      expect(headers['Title']).not.toContain('\n');
+    });
+
+    it('sanitizes lone \\n in title header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: 'Line1\nLine2', body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toBe('Line1 Line2');
+    });
+
+    it('passes clean titles through unchanged', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: 'Normal Title', body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toBe('Normal Title');
+    });
+
+    it('truncates title at 255 chars', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const longTitle = 'A'.repeat(300);
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { title: longTitle, body: 'body' },
+      );
+
+      const headers = mockFetch.mock.calls[0][1].headers;
+      expect(headers['Title']).toHaveLength(255);
+    });
+
+    // H5: SSRF validation
+    it('blocks 127.0.0.1', async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+      const result = await ntfyService.send(
+        { service: 'ntfy', host: '127.0.0.1', topic: 'topic' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/not allowed/);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('blocks 10.0.0.1', async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+      const result = await ntfyService.send(
+        { service: 'ntfy', host: '10.0.0.1', topic: 'topic' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('blocks 192.168.1.1', async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+      const result = await ntfyService.send(
+        { service: 'ntfy', host: '192.168.1.1', topic: 'topic' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('blocks 169.254.169.254', async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+      const result = await ntfyService.send(
+        { service: 'ntfy', host: '169.254.169.254', topic: 'topic' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('blocks ::1', async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+      const result = await ntfyService.send(
+        { service: 'ntfy', host: '::1', topic: 'topic' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    // M2: Timeout signal present
+    it('passes AbortSignal.timeout to fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { body: 'test' },
+      );
+
+      const init = mockFetch.mock.calls[0][1];
+      expect(init.signal).toBeDefined();
+    });
+
+    // M6: Config guard
+    it('throws on misrouted config', async () => {
+      await expect(
+        ntfyService.send({ service: 'discord', webhookId: 'x', webhookToken: 'y' }, { body: 'test' }),
+      ).rejects.toThrow('Misrouted config: expected ntfy');
+    });
+
+    // L2: Non-Error thrown values handled
+    it('handles non-Error thrown values gracefully', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue('plain string error'));
+      const result = await ntfyService.send(
+        { service: 'ntfy', host: 'ntfy.sh', topic: 'topic' },
+        { body: 'test' },
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('plain string error');
+    });
   });
 });
