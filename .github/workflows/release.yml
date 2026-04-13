@@ -7,6 +7,10 @@
 #   Organization or user: ambersecurityinc
 #   Repository: notifly
 #   Workflow filename: release.yml
+#
+# NOTE: GitHub Packages publishing runs as a second job in this same
+# workflow. A separate workflow triggered by the release event won't
+# fire because releases created by GITHUB_TOKEN don't trigger workflows.
 # ============================================================
 name: Release
 
@@ -16,13 +20,16 @@ on:
       - main
 
 permissions:
-  id-token: write       # Required for OIDC trusted publishing
+  id-token: write       # Required for OIDC trusted publishing to npm
   contents: write       # For changeset version PR commits
   pull-requests: write  # For changeset PR creation
+  packages: write       # For publishing to GitHub Packages
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -43,7 +50,7 @@ jobs:
 
       - run: npm run build
 
-      - name: Create Release Pull Request or Publish
+      - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
@@ -51,3 +58,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Do NOT set NODE_AUTH_TOKEN — OIDC handles auth automatically
+
+  publish-github-packages:
+    needs: release
+    # Only run when changesets actually published a new version (not just a version PR)
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.14.1'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ambersecurityinc'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
