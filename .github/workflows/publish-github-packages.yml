@@ -1,0 +1,36 @@
+# ============================================================
+# Publishes to GitHub Package Registry on every GitHub Release.
+# Triggered automatically when release.yml (changesets) creates
+# a new release after merging a version bump PR.
+#
+# Auth: uses the built-in GITHUB_TOKEN — no extra secrets needed.
+# ============================================================
+name: Publish to GitHub Packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.14.1'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ambersecurityinc'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
