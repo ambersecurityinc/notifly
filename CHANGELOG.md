@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+### Minor Changes
+
+- Add GitHub Packages as a publish target alongside npmjs.org
+
 ## 0.4.0 — 2026-03-28
 
 ### Security
