@@ -12,11 +12,11 @@
 		"deploy:prod": "npm run build && wrangler pages deploy dist --project-name notifly-website --branch main"
 	},
 	"devDependencies": {
-		"@astrojs/cloudflare": "13.1.8",
+		"@astrojs/cloudflare": "13.3.1",
 		"@astrojs/sitemap": "3.7.2",
 		"@biomejs/biome": "2.4.11",
 		"@tailwindcss/vite": "4.2.2",
-		"astro": "6.1.5",
+		"astro": "6.2.2",
 		"tailwindcss": "4.2.2",
 		"wrangler": "4.82.1"
 	}
