@@ -31,11 +31,11 @@ jobs:
     outputs:
       published: ${{ steps.changesets.outputs.published }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.4.0
         with:
           node-version: '24.15.0'
           registry-url: 'https://registry.npmjs.org'
@@ -65,9 +65,9 @@ jobs:
     if: needs.release.outputs.published == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.4.0
         with:
           node-version: '24.15.0'
           registry-url: 'https://npm.pkg.github.com'
