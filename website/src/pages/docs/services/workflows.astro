@@ -1,0 +1,101 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+---
+
+<DocsLayout
+	title="Microsoft Teams (Workflows)"
+	description="Send notifications to Microsoft Teams via Power Automate (Workflows) webhooks — the successor to the retiring Office 365 connectors."
+	section="Services"
+	prev={{ title: 'Microsoft Teams', href: '/docs/services/msteams' }}
+	next={{ title: 'ntfy', href: '/docs/services/ntfy' }}
+>
+	<h1>Microsoft Teams (Workflows)</h1>
+	<p>
+		Send notifications to Teams channels via the <strong>Workflows</strong> app
+		(powered by Power Automate). This is the successor to the
+		<a href="/docs/services/msteams">Office 365 incoming connectors</a> that
+		Microsoft is
+		<a href="https://devblogs.microsoft.com/microsoft365dev/retirement-of-office-365-connectors-within-microsoft-teams/" target="_blank" rel="noopener">retiring</a>.
+	</p>
+
+	<h2>URL format</h2>
+	<p>
+		A Workflows webhook URL carries a cryptographic <code>sig</code> token that
+		must be preserved exactly, so notifly stores the whole HTTPS URL by swapping
+		its scheme from <code>https</code> to <code>workflows</code>:
+	</p>
+	<CodeBlock
+		code="workflows://<host>/<path>/triggers/manual/paths/invoke?...&sig=..."
+		lang="text"
+		label="scheme"
+	/>
+	<p>
+		The easiest way to produce this is
+		<a href="/docs/builder/smart-paste">smart paste</a> — paste the raw HTTPS URL
+		you copied from Teams and it converts automatically. You can also do it
+		interactively in the <a href="/docs/builder/playground">URL Builder</a>.
+		Registered under both <code>workflows://</code> and the
+		<code>workflow://</code> alias.
+	</p>
+
+	<h2>Example</h2>
+	<CodeBlock
+		code={`import { notify } from '@ambersecurityinc/notifly';
+
+await notify(
+  {
+    urls: [
+      'workflows://default.b0.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/WORKFLOW_ID/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SIGNATURE',
+    ],
+  },
+  { title: 'Release', body: 'v3.0 deployed successfully', type: 'success' }
+);`}
+		lang="typescript"
+	/>
+
+	<h2>Creating the webhook</h2>
+	<ol>
+		<li>Open the Teams channel you want to post to.</li>
+		<li>Click <strong>…</strong> (More options) next to the channel name and select <strong>Workflows</strong>.</li>
+		<li>
+			Choose the <strong>"Post to a channel when a webhook request is received"</strong>
+			template (also shown as <em>"Send webhook alerts to a channel"</em>).
+		</li>
+		<li>Configure the target team and channel, then <strong>Save</strong>.</li>
+		<li>Copy the generated webhook URL — it looks like:
+			<CodeBlock
+				code={`https://<env>.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/<id>/triggers/manual/paths/invoke?api-version=1&sp=...&sv=1.0&sig=...`}
+				lang="text"
+				label="workflows webhook url"
+			/>
+		</li>
+	</ol>
+	<p>
+		Older flows issue Logic Apps style URLs
+		(<code>https://&lt;host&gt;.logic.azure.com:443/workflows/.../triggers/manual/paths/invoke?...</code>) —
+		both are supported.
+	</p>
+
+	<h2>Message format</h2>
+	<p>
+		Messages are posted as a simple <code>&#123; "text": "..." &#125;</code>
+		payload, which the built-in template renders with basic Markdown. When a
+		<code>title</code> is provided it becomes a bold first line, followed by the
+		<code>body</code>.
+	</p>
+
+	<h2>Workflows vs. the legacy connector</h2>
+	<ul>
+		<li>
+			New Teams webhooks should use <code>workflows://</code>. The legacy
+			<a href="/docs/services/msteams"><code>msteams://</code></a> connector still
+			works where it is already configured, but Microsoft is blocking creation of
+			new connectors.
+		</li>
+		<li>
+			Button rendering is not supported for message cards posted through
+			Workflows.
+		</li>
+	</ul>
+</DocsLayout>

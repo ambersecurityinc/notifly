@@ -91,6 +91,23 @@ describe('decomposeUrl', () => {
     });
   });
 
+  describe('workflows', () => {
+    it('decomposes a workflows URL back to the full HTTPS webhook URL', () => {
+      const result = decomposeUrl(
+        'workflows://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk',
+      );
+      expect(result.service).toBe('workflows');
+      expect(result.fields['webhook_url']).toBe(
+        'https://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk',
+      );
+    });
+
+    it('decomposes the workflow:// alias', () => {
+      const result = decomposeUrl('workflow://host.example.com/triggers/manual/paths/invoke?sig=x');
+      expect(result.service).toBe('workflows');
+    });
+  });
+
   describe('pushover', () => {
     it('decomposes pushover URL without device', () => {
       const result = decomposeUrl('pover://myuserkey/myapitoken');
@@ -198,6 +215,15 @@ describe('decomposeUrl', () => {
       expect(decomposed.fields['format']).toBe('form');
       expect(decomposed.fields['secure']).toBe(true);
       expect(decomposed.fields['method']).toBe('PUT');
+    });
+
+    it('round-trips workflows URL, preserving the sig token', () => {
+      const webhook_url =
+        'https://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk';
+      const { url } = buildUrl('workflows', { webhook_url });
+      const decomposed = decomposeUrl(url);
+      expect(decomposed.service).toBe('workflows');
+      expect(decomposed.fields['webhook_url']).toBe(webhook_url);
     });
   });
 });

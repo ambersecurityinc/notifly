@@ -65,6 +65,31 @@ describe('detectAndConvert', () => {
     });
   });
 
+  describe('Microsoft Teams (Workflows / Power Automate)', () => {
+    const powerAutomate =
+      'https://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk';
+
+    it('converts a Power Automate webhook URL by swapping the scheme', () => {
+      const result = detectAndConvert(powerAutomate);
+      expect(result).not.toBeNull();
+      expect(result!.service).toBe('workflows');
+      expect(result!.notiflyUrl).toBe(powerAutomate.replace(/^https:\/\//, 'workflows://'));
+      expect(result!.fields['webhook_url']).toBe(powerAutomate);
+    });
+
+    it('converts a Logic Apps style webhook URL', () => {
+      const raw =
+        'https://prod-12.westus.logic.azure.com:443/workflows/abc/triggers/manual/paths/invoke?api-version=2016-06-01&sp=x&sv=1.0&sig=SECRET';
+      expect(detectAndConvert(raw)?.service).toBe('workflows');
+    });
+
+    it('returns null for an invoke path with no sig token', () => {
+      expect(
+        detectAndConvert('https://host.example.com/triggers/manual/paths/invoke?api-version=1'),
+      ).toBeNull();
+    });
+  });
+
   describe('Telegram', () => {
     it('extracts bot_token from Telegram API URL, leaves chat_id empty', () => {
       const result = detectAndConvert('https://api.telegram.org/bot123456:ABCdefGhIjK/sendMessage');
@@ -211,6 +236,22 @@ describe('smartParse', () => {
     const result = smartParse('msteams://groupid@tenantid/chan/wid');
     expect(result?.service).toBe('msteams');
     expect(result?.fields['group_id']).toBe('groupid');
+  });
+
+  it('converts a raw Teams Workflows (Power Automate) URL', () => {
+    const raw =
+      'https://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk';
+    const result = smartParse(raw);
+    expect(result?.service).toBe('workflows');
+    expect(result?.notiflyUrl).toBe(raw.replace(/^https:\/\//, 'workflows://'));
+  });
+
+  it('round-trips an existing workflows Apprise URL', () => {
+    const notiflyUrl =
+      'workflows://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk';
+    const result = smartParse(notiflyUrl);
+    expect(result?.service).toBe('workflows');
+    expect(result?.notiflyUrl).toBe(notiflyUrl);
   });
 
   it('returns null for completely unknown URLs', () => {

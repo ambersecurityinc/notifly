@@ -109,6 +109,22 @@ describe('buildUrl', () => {
     });
   });
 
+  describe('workflows', () => {
+    it('builds a workflows URL by swapping the scheme, preserving the sig token', () => {
+      const raw =
+        'https://default.b0.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/486665a7c2be4f109eff8dfe7f26bbf8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZIVFCi7oV6mVHEDMfU2RVTjhfRy29NnUa6hDumHwfrk';
+      const { url, errors } = buildUrl('workflows', { webhook_url: raw });
+      expect(errors).toEqual([]);
+      expect(url).toBe(raw.replace(/^https:\/\//, 'workflows://'));
+    });
+
+    it('rejects a non-HTTPS webhook URL', () => {
+      const { url, errors } = buildUrl('workflows', { webhook_url: 'ftp://example.com/x' });
+      expect(url).toBe('');
+      expect(errors.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('pushover', () => {
     it('builds pushover URL without device', () => {
       const { url } = buildUrl('pushover', {

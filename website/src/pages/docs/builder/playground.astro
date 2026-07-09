@@ -1,0 +1,397 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+---
+
+<DocsLayout
+	title="URL Builder"
+	description="Build and validate notifly notification URLs interactively in your browser. Runs entirely client-side — nothing is ever sent to a server."
+	section="Builder"
+	prev={{ title: 'Smart Paste', href: '/docs/builder/smart-paste' }}
+>
+	<h1>URL Builder</h1>
+	<p>
+		Pick a service, fill in the fields, and copy the generated notifly URL.
+		Or paste a raw webhook URL you copied from a service and let smart paste
+		convert it for you.
+	</p>
+
+	<div
+		style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--color-accent-border);background:var(--color-accent-dim);border-radius:8px;margin:20px 0 28px;font-size:12px;font-family:var(--font-mono);color:var(--color-text-muted);"
+	>
+		<span style="color:var(--color-accent);">🔒</span>
+		<span
+			>The builder runs <strong style="color:var(--color-text);">entirely in your browser</strong>.
+			The URLs, tokens, and secrets you enter are never sent anywhere — no request
+			carries your input off this page.</span
+		>
+	</div>
+
+	<!-- Smart paste -->
+	<label class="ub-label" for="ub-paste">Paste a raw webhook URL (optional)</label>
+	<input
+		id="ub-paste"
+		class="ub-input"
+		type="text"
+		autocomplete="off"
+		spellcheck="false"
+		placeholder="https://discord.com/api/webhooks/123/abc  ·  https://….powerplatform.com/…/invoke?…&sig=…"
+	/>
+	<div id="ub-paste-status" class="ub-hint" style="min-height:16px;margin-top:6px;"></div>
+
+	<div class="ub-divider"><span>or build manually</span></div>
+
+	<!-- Service selector -->
+	<label class="ub-label" for="ub-service">Service</label>
+	<select id="ub-service" class="ub-input"></select>
+	<p id="ub-service-desc" class="ub-hint" style="margin-top:8px;"></p>
+
+	<!-- Dynamic form -->
+	<form id="ub-form" style="margin-top:20px;display:flex;flex-direction:column;gap:18px;"></form>
+
+	<div style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+		<input id="ub-reveal" type="checkbox" style="accent-color:var(--color-accent);" />
+		<label for="ub-reveal" style="font-size:12px;color:var(--color-text-muted);font-family:var(--font-mono);cursor:pointer;"
+			>Reveal secret fields</label
+		>
+	</div>
+
+	<!-- Output -->
+	<label class="ub-label" style="margin-top:28px;">Generated notifly URL</label>
+	<div class="ub-output-wrap">
+		<code id="ub-output" class="ub-output">—</code>
+		<button id="ub-copy" class="ub-copy" type="button" disabled>Copy</button>
+	</div>
+	<div id="ub-errors" class="ub-errors"></div>
+</DocsLayout>
+
+<style>
+	.ub-label {
+		display: block;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: 8px;
+	}
+	.ub-input {
+		width: 100%;
+		box-sizing: border-box;
+		background: var(--color-surface-2);
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		padding: 11px 13px;
+		color: var(--color-text);
+		font-family: var(--font-mono);
+		font-size: 13px;
+		outline: none;
+		transition: border-color 0.15s;
+	}
+	.ub-input:focus {
+		border-color: var(--color-accent-border);
+	}
+	.ub-input::placeholder {
+		color: var(--color-text-faint);
+	}
+	select.ub-input {
+		cursor: pointer;
+	}
+	.ub-hint {
+		font-size: 12px;
+		color: var(--color-text-muted);
+		line-height: 1.5;
+	}
+	.ub-field-hint {
+		font-size: 11px;
+		color: var(--color-text-dim);
+		margin-top: 6px;
+		line-height: 1.5;
+	}
+	.ub-req {
+		color: var(--color-accent);
+	}
+	.ub-divider {
+		display: flex;
+		align-items: center;
+		text-align: center;
+		margin: 28px 0;
+		color: var(--color-text-dim);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+	.ub-divider::before,
+	.ub-divider::after {
+		content: '';
+		flex: 1;
+		border-bottom: 1px solid var(--color-border);
+	}
+	.ub-divider span {
+		padding: 0 12px;
+	}
+	.ub-output-wrap {
+		display: flex;
+		align-items: stretch;
+		gap: 8px;
+	}
+	.ub-output {
+		flex: 1;
+		min-width: 0;
+		background: var(--color-surface-2);
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		padding: 12px 14px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: var(--color-accent);
+		word-break: break-all;
+		line-height: 1.5;
+	}
+	.ub-output.ub-empty {
+		color: var(--color-text-dim);
+	}
+	.ub-copy {
+		flex-shrink: 0;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		color: var(--color-text-muted);
+		font-family: var(--font-mono);
+		font-size: 12px;
+		padding: 0 16px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	.ub-copy:hover:not(:disabled) {
+		border-color: var(--color-accent-border);
+		color: var(--color-accent);
+	}
+	.ub-copy:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.ub-errors {
+		margin-top: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.ub-error {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		color: #f87171;
+	}
+	.ub-checkbox-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.ub-checkbox-row input {
+		accent-color: var(--color-accent);
+	}
+</style>
+
+<script>
+	import {
+		getServiceSchemas,
+		getServiceSchema,
+		buildUrl,
+		validateFields,
+		smartParse,
+	} from '../../../../../src/builder/index.ts';
+	import type { ServiceSchema, ServiceField } from '../../../../../src/builder/index.ts';
+
+	const serviceSel = document.getElementById('ub-service') as HTMLSelectElement;
+	const serviceDesc = document.getElementById('ub-service-desc') as HTMLParagraphElement;
+	const form = document.getElementById('ub-form') as HTMLFormElement;
+	const output = document.getElementById('ub-output') as HTMLElement;
+	const copyBtn = document.getElementById('ub-copy') as HTMLButtonElement;
+	const errorsEl = document.getElementById('ub-errors') as HTMLElement;
+	const pasteInput = document.getElementById('ub-paste') as HTMLInputElement;
+	const pasteStatus = document.getElementById('ub-paste-status') as HTMLElement;
+	const revealChk = document.getElementById('ub-reveal') as HTMLInputElement;
+
+	const schemas: ServiceSchema[] = getServiceSchemas();
+
+	// Populate the service dropdown
+	for (const s of schemas) {
+		const opt = document.createElement('option');
+		opt.value = s.service;
+		opt.textContent = s.label;
+		serviceSel.appendChild(opt);
+	}
+
+	function currentValues(): Record<string, string | boolean> {
+		const values: Record<string, string | boolean> = {};
+		for (const el of form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-key]')) {
+			const key = el.dataset.key as string;
+			if (el instanceof HTMLInputElement && el.type === 'checkbox') {
+				values[key] = el.checked;
+			} else {
+				values[key] = el.value;
+			}
+		}
+		return values;
+	}
+
+	function renderForm(service: string, preset: Record<string, string | number | boolean> = {}) {
+		const schema = getServiceSchema(service);
+		form.innerHTML = '';
+		serviceDesc.textContent = schema?.description ?? '';
+		if (!schema) return;
+
+		for (const field of schema.fields) {
+			form.appendChild(renderField(field, preset[field.key]));
+		}
+		applyReveal();
+		update();
+	}
+
+	function renderField(field: ServiceField, preset: string | number | boolean | undefined): HTMLElement {
+		const wrap = document.createElement('div');
+
+		if (field.type === 'boolean') {
+			const row = document.createElement('div');
+			row.className = 'ub-checkbox-row';
+			const input = document.createElement('input');
+			input.type = 'checkbox';
+			input.id = `ub-f-${field.key}`;
+			input.dataset.key = field.key;
+			const def = preset ?? field.defaultValue;
+			input.checked = def === true || def === 'true';
+			input.addEventListener('change', update);
+			const label = document.createElement('label');
+			label.htmlFor = input.id;
+			label.style.cssText = 'font-size:13px;color:var(--color-text);font-family:var(--font-mono);cursor:pointer;';
+			label.textContent = field.label;
+			row.append(input, label);
+			wrap.appendChild(row);
+			if (field.helpText) wrap.appendChild(hint(field.helpText));
+			return wrap;
+		}
+
+		const label = document.createElement('label');
+		label.className = 'ub-label';
+		label.htmlFor = `ub-f-${field.key}`;
+		label.innerHTML = field.required
+			? `${escapeHtml(field.label)} <span class="ub-req">*</span>`
+			: escapeHtml(field.label);
+		wrap.appendChild(label);
+
+		if (field.type === 'select' && field.options) {
+			const sel = document.createElement('select');
+			sel.className = 'ub-input';
+			sel.id = `ub-f-${field.key}`;
+			sel.dataset.key = field.key;
+			for (const o of field.options) {
+				const opt = document.createElement('option');
+				opt.value = o.value;
+				opt.textContent = o.label;
+				sel.appendChild(opt);
+			}
+			const def = preset ?? field.defaultValue;
+			if (def !== undefined) sel.value = String(def);
+			sel.addEventListener('change', update);
+			wrap.appendChild(sel);
+		} else {
+			const input = document.createElement('input');
+			input.className = 'ub-input';
+			input.id = `ub-f-${field.key}`;
+			input.dataset.key = field.key;
+			input.type = field.type === 'number' ? 'number' : 'text';
+			input.autocomplete = 'off';
+			input.spellcheck = false;
+			if (field.sensitive) input.dataset.sensitive = 'true';
+			if (field.placeholder) input.placeholder = field.placeholder;
+			const def = preset ?? field.defaultValue;
+			if (def !== undefined) input.value = String(def);
+			input.addEventListener('input', update);
+			wrap.appendChild(input);
+		}
+
+		if (field.helpText) wrap.appendChild(hint(field.helpText));
+		return wrap;
+	}
+
+	function hint(text: string): HTMLElement {
+		const p = document.createElement('p');
+		p.className = 'ub-field-hint';
+		p.textContent = text;
+		return p;
+	}
+
+	function applyReveal() {
+		const reveal = revealChk.checked;
+		for (const el of form.querySelectorAll<HTMLInputElement>('input[data-sensitive]')) {
+			el.type = reveal ? 'text' : 'password';
+		}
+	}
+
+	function update() {
+		const service = serviceSel.value;
+		const values = currentValues();
+		const errors = validateFields(service, values as Record<string, string | number | boolean>);
+
+		errorsEl.innerHTML = '';
+		for (const e of errors) {
+			const div = document.createElement('div');
+			div.className = 'ub-error';
+			div.textContent = `${e.field}: ${e.message}`;
+			errorsEl.appendChild(div);
+		}
+
+		const result = buildUrl(service, values as Record<string, string | number | boolean>);
+		if (result.url) {
+			output.textContent = result.url;
+			output.classList.remove('ub-empty');
+			copyBtn.disabled = false;
+		} else {
+			output.textContent = 'Fill in the required fields to generate a URL';
+			output.classList.add('ub-empty');
+			copyBtn.disabled = true;
+		}
+	}
+
+	function escapeHtml(s: string): string {
+		return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	}
+
+	// Smart paste handling
+	function handlePaste() {
+		const raw = pasteInput.value.trim();
+		if (!raw) {
+			pasteStatus.textContent = '';
+			return;
+		}
+		const result = smartParse(raw);
+		if (!result) {
+			pasteStatus.style.color = '#f87171';
+			pasteStatus.textContent = "Couldn't recognize that URL. Select a service and enter fields manually.";
+			return;
+		}
+		const schema = getServiceSchema(result.service);
+		serviceSel.value = result.service;
+		renderForm(result.service, result.fields);
+		pasteStatus.style.color = 'var(--color-accent)';
+		pasteStatus.textContent = `Detected ${schema?.label ?? result.service} — fields filled in below.`;
+	}
+
+	pasteInput.addEventListener('input', handlePaste);
+	serviceSel.addEventListener('change', () => renderForm(serviceSel.value));
+	revealChk.addEventListener('change', applyReveal);
+
+	copyBtn.addEventListener('click', async () => {
+		try {
+			await navigator.clipboard.writeText(output.textContent ?? '');
+			const prev = copyBtn.textContent;
+			copyBtn.textContent = 'Copied';
+			setTimeout(() => (copyBtn.textContent = prev), 1400);
+		} catch {
+			/* clipboard unavailable — no-op */
+		}
+	});
+
+	// Initial render
+	renderForm(serviceSel.value);
+</script>

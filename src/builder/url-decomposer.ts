@@ -87,6 +87,11 @@ export function decomposeUrl(urlString: string): DecomposeResult {
       fields['webhook_id'] = parts[1] ?? '';
       break;
     }
+    case 'workflows': {
+      // workflows://<host>[:port]/<path>?<query>  →  full HTTPS webhook URL
+      fields['webhook_url'] = `https://${url.host}${url.pathname}${url.search}`;
+      break;
+    }
     case 'pushover': {
       const parts = url.pathname.split('/').filter(Boolean);
       fields['user_key'] = url.hostname;

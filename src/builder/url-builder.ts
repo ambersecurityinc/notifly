@@ -57,6 +57,13 @@ function buildMSTeamsUrl(fields: Fields): string {
   return `msteams://${host}/${channelId}/${webhookId}`;
 }
 
+function buildWorkflowsUrl(fields: Fields): string {
+  // Store the full HTTPS webhook URL by swapping the scheme; the sig token and
+  // all other query params are preserved verbatim.
+  const raw = String(fields['webhook_url']).trim();
+  return raw.replace(/^https?:\/\//i, 'workflows://');
+}
+
 function buildPushoverUrl(fields: Fields): string {
   const base = `pover://${fields['user_key']}/${fields['api_token']}`;
   if (fields['device']) return `${base}/${fields['device']}`;
@@ -100,6 +107,7 @@ const BUILDERS: Record<string, (fields: Fields) => string> = {
   gotify: buildGotifyUrl,
   email: buildEmailUrl,
   msteams: buildMSTeamsUrl,
+  workflows: buildWorkflowsUrl,
   pushover: buildPushoverUrl,
   pushbullet: buildPushbulletUrl,
   webhook: buildWebhookUrl,

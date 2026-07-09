@@ -295,6 +295,26 @@ export const SERVICE_SCHEMAS: ServiceSchema[] = [
     ],
   },
   {
+    service: 'workflows',
+    label: 'Microsoft Teams (Workflows)',
+    description: 'Send notifications via Microsoft Teams Power Automate (Workflows) webhooks',
+    schemes: ['workflows', 'workflow'],
+    category: 'chat',
+    iconHint: 'teams',
+    fields: [
+      {
+        key: 'webhook_url',
+        label: 'Workflow Webhook URL',
+        type: 'text',
+        required: true,
+        sensitive: true,
+        placeholder: 'https://….environment.api.powerplatform.com/powerautomate/…/triggers/manual/paths/invoke?…&sig=…',
+        helpText: 'In Teams: open the target channel → More options (⋯) → Workflows → "Post to a channel when a webhook request is received" → copy the generated URL. Paste the full HTTPS URL here (it includes the sig token). This replaces the retired Office 365 "Incoming Webhook" connector.',
+        validation: { pattern: '^https://' },
+      },
+    ],
+  },
+  {
     service: 'pushover',
     label: 'Pushover',
     description: 'Send push notifications via Pushover to iOS, Android, and desktop',
