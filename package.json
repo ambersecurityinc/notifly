@@ -1,6 +1,6 @@
 {
   "name": "@ambersecurityinc/notifly",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Send notifications to multiple services from a single API using Apprise-compatible URLs",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -53,10 +53,10 @@
     "access": "public"
   },
   "devDependencies": {
-    "@changesets/cli": "2.30.0",
-    "@vitest/coverage-v8": "4.1.4",
+    "@changesets/cli": "2.31.0",
+    "@vitest/coverage-v8": "4.1.7",
     "tsup": "8.5.1",
-    "typescript": "6.0.2",
-    "vitest": "4.1.4"
+    "typescript": "6.0.3",
+    "vitest": "4.1.7"
   }
 }
