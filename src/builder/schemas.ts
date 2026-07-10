@@ -312,6 +312,20 @@ export const SERVICE_SCHEMAS: ServiceSchema[] = [
         helpText: 'In Teams: open the target channel → More options (⋯) → Workflows → "Post to a channel when a webhook request is received" → copy the generated URL. Paste the full HTTPS URL here (it includes the sig token). This replaces the retired Office 365 "Incoming Webhook" connector.',
         validation: { pattern: '^https://' },
       },
+      {
+        key: 'format',
+        label: 'Payload Format',
+        type: 'select',
+        required: false,
+        sensitive: false,
+        defaultValue: 'card',
+        helpText: 'How the message body is encoded. "Adaptive Card" (default) suits the standard "Post card in a chat or channel" flow. Use "Message envelope" if your flow reads triggerBody()?[\'attachments\'], or "Simple text" for the basic "Send webhook alerts to a channel" template.',
+        options: [
+          { label: 'Adaptive Card (default)', value: 'card' },
+          { label: 'Message envelope (attachments)', value: 'message' },
+          { label: 'Simple text', value: 'text' },
+        ],
+      },
     ],
   },
   {

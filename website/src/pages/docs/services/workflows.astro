@@ -77,12 +77,53 @@ await notify(
 		both are supported.
 	</p>
 
-	<h2>Message format</h2>
+	<h2>Payload format</h2>
 	<p>
-		Messages are posted as a simple <code>&#123; "text": "..." &#125;</code>
-		payload, which the built-in template renders with basic Markdown. When a
-		<code>title</code> is provided it becomes a bold first line, followed by the
-		<code>body</code>.
+		Teams Workflows templates disagree on what the request body must look like,
+		depending on how the flow's <strong>"Post card in a chat or channel"</strong>
+		action binds its input. notifly supports all three, selected with a
+		<code>#format=</code> fragment on the URL. The fragment stays out of the
+		signed query string and is never sent over the wire.
+	</p>
+	<table>
+		<thead>
+			<tr>
+				<th><code>#format=</code></th>
+				<th>Body sent</th>
+				<th>Use when</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><em>(default)</em> / <code>card</code></td>
+				<td>bare Adaptive Card <code>&#123; "type": "AdaptiveCard", … &#125;</code></td>
+				<td>the flow binds the whole trigger body into "Post card" (the flowbot requires top-level <code>type: "AdaptiveCard"</code>)</td>
+			</tr>
+			<tr>
+				<td><code>message</code></td>
+				<td><code>&#123; "type": "message", "attachments": [ … ] &#125;</code></td>
+				<td>the flow reads <code>triggerBody()?['attachments']</code></td>
+			</tr>
+			<tr>
+				<td><code>text</code></td>
+				<td><code>&#123; "text": "**title**\n\nbody" &#125;</code></td>
+				<td>the basic "Send webhook alerts to a channel" template</td>
+			</tr>
+		</tbody>
+	</table>
+	<CodeBlock
+		code={`workflows://…/triggers/manual/paths/invoke?…&sig=…            # Adaptive Card (default)
+workflows://…/triggers/manual/paths/invoke?…&sig=…#format=message
+workflows://…/triggers/manual/paths/invoke?…&sig=…#format=text`}
+		lang="text"
+		label="format options"
+	/>
+	<p>
+		The message <code>title</code> becomes a bold heading; message
+		<code>type</code> colours it (<code>success</code> → Good,
+		<code>warning</code> → Warning, <code>failure</code> → Attention). If you hit
+		<code>AdaptiveSerializationException: Property 'type' must be 'AdaptiveCard'</code>,
+		your flow needs the default <code>card</code> format (which notifly ships).
 	</p>
 
 	<h2>Workflows vs. the legacy connector</h2>

@@ -123,6 +123,22 @@ describe('buildUrl', () => {
       expect(url).toBe('');
       expect(errors.length).toBeGreaterThan(0);
     });
+
+    it('omits the fragment for the default card format', () => {
+      const { url } = buildUrl('workflows', {
+        webhook_url: 'https://x.powerplatform.com/a/triggers/manual/paths/invoke?sig=x',
+        format: 'card',
+      });
+      expect(url).toBe('workflows://x.powerplatform.com/a/triggers/manual/paths/invoke?sig=x');
+    });
+
+    it('appends #format for non-default formats', () => {
+      const { url } = buildUrl('workflows', {
+        webhook_url: 'https://x.powerplatform.com/a/triggers/manual/paths/invoke?sig=x',
+        format: 'message',
+      });
+      expect(url).toBe('workflows://x.powerplatform.com/a/triggers/manual/paths/invoke?sig=x#format=message');
+    });
   });
 
   describe('pushover', () => {

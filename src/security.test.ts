@@ -220,6 +220,11 @@ describe('enforceMessageLimits', () => {
     const msg = enforceMessageLimits({ body: 'world' });
     expect(msg.title).toBeUndefined();
   });
+
+  it('preserves the message type so services can key off it', () => {
+    const msg = enforceMessageLimits({ body: 'world', type: 'failure' as const });
+    expect(msg.type).toBe('failure');
+  });
 });
 
 describe('validateEmail', () => {
