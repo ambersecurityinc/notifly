@@ -8,14 +8,14 @@ on:
 
 jobs:
   test:
-    runs-on: ambersecurityinc-runner
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22, 24]
+        node-version: [22, 24, 26]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.4.0
         with:
           node-version: ${{ matrix.node-version }}
 
