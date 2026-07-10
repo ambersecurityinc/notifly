@@ -1,3 +1,4 @@
+import type { NotiflyMessage } from './types.js';
 /**
  * Shared security helpers used across service adapters.
  */
@@ -188,10 +189,13 @@ export const MAX_TITLE_LENGTH = 256;
 export const MAX_BODY_LENGTH = 65_536;
 
 /**
- * Enforce message size limits. Truncates title and body in-place.
+ * Enforce message size limits. Truncates title and body, preserving the
+ * message `type` so services that key off it (Pushover priority, the webhook
+ * `type` field, Teams Adaptive Card colour) receive it.
  */
-export function enforceMessageLimits(message: { title?: string; body: string }): { title?: string; body: string } {
+export function enforceMessageLimits(message: NotiflyMessage): NotiflyMessage {
   return {
+    ...message,
     title: message.title !== undefined ? truncate(message.title, MAX_TITLE_LENGTH) : undefined,
     body: truncate(message.body, MAX_BODY_LENGTH),
   };

@@ -106,6 +106,17 @@ describe('decomposeUrl', () => {
       const result = decomposeUrl('workflow://host.example.com/triggers/manual/paths/invoke?sig=x');
       expect(result.service).toBe('workflows');
     });
+
+    it('defaults the format to card when no fragment is present', () => {
+      const result = decomposeUrl('workflows://host.example.com/triggers/manual/paths/invoke?sig=x');
+      expect(result.fields['format']).toBe('card');
+    });
+
+    it('reads the format from the fragment without leaking it into webhook_url', () => {
+      const result = decomposeUrl('workflows://host.example.com/a/triggers/manual/paths/invoke?sig=x#format=text');
+      expect(result.fields['format']).toBe('text');
+      expect(result.fields['webhook_url']).toBe('https://host.example.com/a/triggers/manual/paths/invoke?sig=x');
+    });
   });
 
   describe('pushover', () => {

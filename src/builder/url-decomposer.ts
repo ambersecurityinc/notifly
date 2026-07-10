@@ -88,8 +88,10 @@ export function decomposeUrl(urlString: string): DecomposeResult {
       break;
     }
     case 'workflows': {
-      // workflows://<host>[:port]/<path>?<query>  →  full HTTPS webhook URL
+      // workflows://<host>[:port]/<path>?<query>[#format=...]  →  full HTTPS webhook URL
       fields['webhook_url'] = `https://${url.host}${url.pathname}${url.search}`;
+      const format = new URLSearchParams(url.hash.replace(/^#/, '')).get('format');
+      fields['format'] = format === 'message' || format === 'text' ? format : 'card';
       break;
     }
     case 'pushover': {

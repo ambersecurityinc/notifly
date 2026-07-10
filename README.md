@@ -369,7 +369,25 @@ workflows://<env>.environment.api.powerplatform.com/powerautomate/.../triggers/m
 
 The easiest way to produce this is `smartParse()` (or `detectAndConvert()`) — paste the raw HTTPS URL and it converts automatically. Also registered as `workflow://` alias.
 
-The message is posted as `{ "text": "..." }`, which the built-in *"Send webhook alerts to a channel"* template renders with basic Markdown (a `title`, if present, becomes a bold first line).
+#### Payload format
+
+Teams Workflows templates disagree on what the request body must look like, depending on how the flow's **"Post card in a chat or channel"** action binds its input. notifly supports all three, selected via a `#format=` fragment on the URL (kept in the fragment so it never touches the signed query string and is never sent over the wire):
+
+| `#format=` | Body sent | Use when |
+|---|---|---|
+| *(default)* / `card` | a bare Adaptive Card `{ "type": "AdaptiveCard", … }` | the flow binds the whole trigger body into "Post card" (the flowbot deserializes the body as an Adaptive Card and requires top-level `type: "AdaptiveCard"`) |
+| `message` | `{ "type": "message", "attachments": [{ contentType, content: <card> }] }` | the flow reads `triggerBody()?['attachments']` |
+| `text` | `{ "text": "**title**\n\nbody" }` | the basic *"Send webhook alerts to a channel"* template |
+
+```
+workflows://…/triggers/manual/paths/invoke?…&sig=…            # Adaptive Card (default)
+workflows://…/triggers/manual/paths/invoke?…&sig=…#format=message
+workflows://…/triggers/manual/paths/invoke?…&sig=…#format=text
+```
+
+The message `title` becomes a bold heading; message `type` colours it (`success`→Good, `warning`→Warning, `failure`→Attention).
+
+> If you see `AdaptiveSerializationException: Property 'type' must be 'AdaptiveCard'`, your flow needs the default `card` format (which this ships). If you see an empty/failed card, try `#format=message`.
 
 ### Pushover
 

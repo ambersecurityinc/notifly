@@ -59,9 +59,12 @@ function buildMSTeamsUrl(fields: Fields): string {
 
 function buildWorkflowsUrl(fields: Fields): string {
   // Store the full HTTPS webhook URL by swapping the scheme; the sig token and
-  // all other query params are preserved verbatim.
-  const raw = String(fields['webhook_url']).trim();
-  return raw.replace(/^https?:\/\//i, 'workflows://');
+  // all other query params are preserved verbatim. The optional payload format
+  // rides in the URL fragment so it never touches the signed query string.
+  const raw = String(fields['webhook_url']).trim().replace(/#.*$/, '');
+  const url = raw.replace(/^https?:\/\//i, 'workflows://');
+  const format = fields['format'] ? String(fields['format']) : 'card';
+  return format && format !== 'card' ? `${url}#format=${format}` : url;
 }
 
 function buildPushoverUrl(fields: Fields): string {
