@@ -1,4 +1,4 @@
-name = "notifly"
+name = 'notifly-website'
 compatibility_date = "2025-03-27"
 
 [assets]
