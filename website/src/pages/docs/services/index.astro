@@ -7,6 +7,7 @@ const services = [
 	{ name: 'Slack', scheme: 'slack://', color: '#E01E5A', category: 'Chat', href: '/docs/services/slack', format: 'slack://token_a/token_b/token_c' },
 	{ name: 'Telegram', scheme: 'tgram://', color: '#26A5E4', category: 'Chat', href: '/docs/services/telegram', format: 'tgram://bot_token/chat_id' },
 	{ name: 'Microsoft Teams', scheme: 'msteams://', color: '#6264A7', category: 'Chat', href: '/docs/services/msteams', format: 'msteams://group_id/channel_id/webhook_id' },
+	{ name: 'Teams (Workflows)', scheme: 'workflows://', color: '#6264A7', category: 'Chat', href: '/docs/services/workflows', format: 'workflows://host/…/invoke?…&sig=…' },
 	{ name: 'ntfy', scheme: 'ntfy://', color: '#57A85C', category: 'Self-Hosted', href: '/docs/services/ntfy', format: 'ntfy://topic or ntfy://host/topic' },
 	{ name: 'Gotify', scheme: 'gotify://', color: '#3F8EBF', category: 'Self-Hosted', href: '/docs/services/gotify', format: 'gotify://host/token' },
 	{ name: 'Pushover', scheme: 'pover://', color: '#249DF1', category: 'Push', href: '/docs/services/pushover', format: 'pover://user_key/api_token' },
@@ -18,14 +19,14 @@ const services = [
 
 <DocsLayout
 	title="Services Overview"
-	description="Overview of all 10 notification services supported by notifly."
+	description="Overview of all 11 notification services supported by notifly."
 	section="Services"
 	prev={{ title: 'API Reference', href: '/docs/api-reference' }}
 	next={{ title: 'Discord', href: '/docs/services/discord' }}
 >
 	<h1>Services Overview</h1>
 	<p>
-		notifly supports 10 notification services out of the box. Each service uses a URL scheme to
+		notifly supports 11 notification services out of the box. Each service uses a URL scheme to
 		encode its configuration — no config files, no environment-variable conventions, just a URL
 		string you can store wherever your credentials live.
 	</p>

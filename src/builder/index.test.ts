@@ -8,9 +8,9 @@ import {
 } from './index.js';
 
 describe('getServiceSchemas', () => {
-  it('returns all 10 schemas', () => {
+  it('returns all 11 schemas', () => {
     const schemas = getServiceSchemas();
-    expect(schemas.length).toBe(10);
+    expect(schemas.length).toBe(11);
   });
 
   it('includes all expected services', () => {
@@ -55,7 +55,7 @@ describe('getServiceSchema', () => {
 
 describe('searchServices', () => {
   it('returns all schemas for empty query', () => {
-    expect(searchServices('').length).toBe(10);
+    expect(searchServices('').length).toBe(11);
   });
 
   it('finds discord by label', () => {

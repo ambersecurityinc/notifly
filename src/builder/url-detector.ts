@@ -14,6 +14,7 @@ export interface DetectResult {
  *   - Discord:  https://discord.com/api/webhooks/{id}/{token}
  *   - Slack:    https://hooks.slack.com/services/{a}/{b}/{c}
  *   - Teams:    https://*.webhook.office.com/webhookb2/{...}/IncomingWebhook/{b}/{c}
+ *   - Teams (Workflows): https://*.../triggers/manual/paths/invoke?...&sig=... (Power Automate)
  *   - Telegram: https://api.telegram.org/bot{token}/...  (chat_id is left empty — fill it in)
  *   - ntfy:     https://ntfy.sh/{topic}
  *   - Gotify:   https://{host}/message?token={token}
@@ -90,6 +91,20 @@ export function detectAndConvert(rawUrl: string): DetectResult | null {
 
       return { service: 'msteams', notiflyUrl, fields };
     }
+  }
+
+  // ── Microsoft Teams (Workflows / Power Automate) ─────────────────────────────
+  // https://<env>.environment.api.powerplatform.com/powerautomate/.../triggers/manual/paths/invoke?...&sig=...
+  // https://<host>.logic.azure.com:443/workflows/.../triggers/manual/paths/invoke?...&sig=...
+  // These carry a `sig` token in the query string and must be preserved verbatim,
+  // so the whole HTTPS URL is stored by swapping https → workflows.
+  if (path.endsWith('/triggers/manual/paths/invoke') && url.searchParams.has('sig')) {
+    const notiflyUrl = rawUrl.replace(/^https?:\/\//i, 'workflows://');
+    return {
+      service: 'workflows',
+      notiflyUrl,
+      fields: { webhook_url: rawUrl },
+    };
   }
 
   // ── Telegram ───────────────────────────────────────────────────────────────

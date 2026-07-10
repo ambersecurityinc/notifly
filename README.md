@@ -60,6 +60,7 @@ console.log(results);
 | Gotify             | `gotify`                    | `gotify://host/token`                                                        |
 | Email (via gateway)| `mailto`                    | `mailto://user:apikey@host/?to=addr@example.com&gateway=resend`              |
 | Microsoft Teams    | `msteams`, `teams`          | `msteams://group_id@tenant_id/channel_id/webhook_id`                         |
+| Teams (Workflows)  | `workflows`, `workflow`     | `workflows://host/powerautomate/.../triggers/manual/paths/invoke?...&sig=...` |
 | Pushover           | `pover`                     | `pover://user_key/api_token` or `pover://user_key/api_token/device`          |
 | Pushbullet         | `pbul`                      | `pbul://access_token` or `pbul://access_token/device_id`                     |
 | Custom Webhook     | `json`, `jsons`, `form`, `forms` | `jsons://example.com/hook` or `forms://example.com/hook?method=PUT`     |
@@ -147,6 +148,7 @@ if (isRawServiceUrl(input)) {
 | `https://discord.com/api/webhooks/{id}/{token}` | `discord` |
 | `https://hooks.slack.com/services/{a}/{b}/{c}` | `slack` |
 | `https://*.webhook.office.com/webhookb2/.../IncomingWebhook/...` | `msteams` |
+| `https://*/.../triggers/manual/paths/invoke?...&sig=...` | `workflows` (Teams Power Automate) |
 | `https://api.telegram.org/bot{token}/...` | `telegram` (chat_id left empty) |
 | `https://ntfy.sh/{topic}` | `ntfy` |
 | `https://{host}/message?token={token}` | `gotify` |
@@ -348,6 +350,26 @@ msteams://group_id@tenant_id/channel_id/webhook_id
 ```
 
 Also registered as `teams://` alias.
+
+### Microsoft Teams (Workflows / Power Automate)
+
+Microsoft is [retiring the Office 365 connectors](https://devblogs.microsoft.com/microsoft365dev/retirement-of-office-365-connectors-within-microsoft-teams/) used by `msteams://` in favour of the **Workflows** app (powered by Power Automate). In Teams, open a channel → **More options (⋯)** → **Workflows** → *"Post to a channel when a webhook request is received"*, then copy the generated URL. It looks like:
+
+```
+https://<env>.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/<id>/triggers/manual/paths/invoke?api-version=1&sp=...&sv=1.0&sig=...
+```
+
+(Older flows issue `https://<host>.logic.azure.com:443/workflows/.../triggers/manual/paths/invoke?...` URLs — both are supported.)
+
+Because the URL carries a cryptographic `sig` token that must be preserved exactly, notifly stores the whole URL by swapping the scheme from `https` to `workflows`:
+
+```
+workflows://<env>.environment.api.powerplatform.com/powerautomate/.../triggers/manual/paths/invoke?...&sig=...
+```
+
+The easiest way to produce this is `smartParse()` (or `detectAndConvert()`) — paste the raw HTTPS URL and it converts automatically. Also registered as `workflow://` alias.
+
+The message is posted as `{ "text": "..." }`, which the built-in *"Send webhook alerts to a channel"* template renders with basic Markdown (a `title`, if present, becomes a bold first line).
 
 ### Pushover
 
