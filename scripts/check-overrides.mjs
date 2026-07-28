@@ -14,7 +14,7 @@
 // No third-party dependencies — Node built-ins plus `npm` only.
 
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, copyFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -101,8 +101,14 @@ function evaluate(manifestDir, pkgJson, target) {
     if (Object.keys(trimmed.overrides).length === 0) delete trimmed.overrides
     writeFileSync(join(scratch, 'package.json'), JSON.stringify(trimmed, null, 2))
 
-    // Fresh resolution from scratch (no lockfile copied in) so we see what npm
-    // would pick today given every parent's declared ranges.
+    // Copy in the committed lockfile so the re-resolution matches what removing
+    // the override for real would produce: `npm install` respecting the existing
+    // lockfile, not a from-scratch resolution. This matters because a parent can
+    // pin an exact vulnerable version that only the override lifts — a
+    // from-scratch resolve can dedupe past it and wrongly look safe.
+    const lockPath = join(manifestDir, 'package-lock.json')
+    if (existsSync(lockPath)) copyFileSync(lockPath, join(scratch, 'package-lock.json'))
+
     execFileSync(
       'npm',
       ['install', '--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund'],
