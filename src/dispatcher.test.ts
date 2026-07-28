@@ -23,7 +23,7 @@ describe('notify()', () => {
 
   it('returns partial results when one service fails', async () => {
     const mockFetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('discord.com')) {
+      if (new URL(url).hostname === 'discord.com') {
         return Promise.resolve({ ok: false, status: 500, text: async () => 'error' });
       }
       return Promise.resolve({ ok: true, text: async () => '' });
