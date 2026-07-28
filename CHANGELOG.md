@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- Maintenance release: resolve dependency security advisories and refresh the dependency tree.
+
+  - Upgrade transitive dependencies flagged by Dependabot (svgo, sharp, defu, esbuild, js-yaml, vite, postcss) to patched versions; `npm audit` is now clean.
+  - Add a weekly override-audit workflow that flags npm `overrides` once they become redundant.
+  - Migrate the website Biome config to v2.
+
+  No changes to the published API or runtime behavior.
+
 ## 0.7.0
 
 ### Minor Changes
