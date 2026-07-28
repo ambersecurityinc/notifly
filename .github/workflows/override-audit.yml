@@ -1,0 +1,50 @@
+name: Override audit
+
+# Weekly check for npm `overrides` that are no longer required. When an upstream
+# package catches up and a manual security pin becomes redundant, this opens (or
+# updates) a tracking issue so the override can be removed. Also runnable on
+# demand via the Actions tab.
+
+on:
+  schedule:
+    # Mondays at 06:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24
+
+      - name: Check whether overrides are still required
+        id: audit
+        run: node scripts/check-overrides.mjs
+
+      - name: Open or update tracking issue
+        if: steps.audit.outputs.removable == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create override-audit \
+            --color 0e8a16 \
+            --description "Redundant dependency overrides that may be removable" \
+            --force
+          title="Dependency overrides may be removable"
+          existing="$(gh issue list --state open --label override-audit --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "Updating existing issue #$existing"
+            gh issue edit "$existing" --title "$title" --body-file override-audit-report.md
+          else
+            echo "Opening new tracking issue"
+            gh issue create --title "$title" --label override-audit --body-file override-audit-report.md
+          fi
