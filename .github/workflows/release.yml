@@ -54,7 +54,7 @@ jobs:
         id: changesets
         uses: changesets/action@v2.1.2
         with:
-          publish: npx changeset publish
+          publish-script: npx changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Do NOT set NODE_AUTH_TOKEN — OIDC handles auth automatically
